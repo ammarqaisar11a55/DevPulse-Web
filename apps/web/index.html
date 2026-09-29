@@ -8,7 +8,25 @@
       name="description"
       content="DevPulse measures your coding time, projects and sessions so you can build better development habits."
     />
+    <meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e131b" media="(prefers-color-scheme: dark)" />
     <title>DevPulse</title>
+    <!--
+      Resolves the saved theme before first paint to avoid a light/dark flash.
+      Keep the storage key in sync with src/features/theme/theme-storage.ts.
+    -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('devpulse:theme');
+          if (pref !== 'light' && pref !== 'dark') pref = 'system';
+          var dark =
+            pref === 'dark' ||
+            (pref === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

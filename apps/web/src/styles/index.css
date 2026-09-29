@@ -1,1 +1,236 @@
 @import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * DevPulse design tokens.
+ * Colours are defined as raw CSS variables per theme and exposed to Tailwind via @theme,
+ * so utilities like `bg-surface` or `text-ink-muted` adapt to the active theme.
+ */
+:root {
+  color-scheme: light;
+
+  --canvas: #f2f4f7;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --surface-3: #eceff4;
+  --line: #dde2ea;
+  --line-strong: #c5ccd8;
+
+  --ink: #121a26;
+  --ink-muted: #586476;
+  --ink-subtle: #6b7586;
+  --ink-inverse: #ffffff;
+
+  --accent: #2445d6;
+  --accent-hover: #1c38b5;
+  --accent-soft: #e7ebfc;
+  --accent-ink: #1a36b0;
+
+  --amber: #9a6100;
+  --amber-soft: #fbf0db;
+  --success: #1c7d52;
+  --success-soft: #e0f3ea;
+  --danger: #c3342a;
+  --danger-soft: #fbe6e4;
+
+  --focus: #2445d6;
+  --overlay: rgb(18 26 38 / 0.45);
+  --shadow-float: 0 12px 32px -8px rgb(18 26 38 / 0.18), 0 2px 6px rgb(18 26 38 / 0.06);
+
+  /* Categorical chart palette, ordered for distinguishability. */
+  --chart-1: #2445d6;
+  --chart-2: #0f8b8d;
+  --chart-3: #c26a00;
+  --chart-4: #8a3ffc;
+  --chart-5: #d02670;
+  --chart-6: #5a6b82;
+  --chart-grid: #e6e9ef;
+  --chart-axis: #7d8797;
+
+  /* Pulse strip intensity ramp (empty → most active). */
+  --pulse-0: #e6e9ef;
+  --pulse-1: #bfcbf6;
+  --pulse-2: #8098ec;
+  --pulse-3: #4a67e0;
+  --pulse-4: #2445d6;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --canvas: #0e131b;
+  --surface: #151c27;
+  --surface-2: #1a2230;
+  --surface-3: #222c3c;
+  --line: #273244;
+  --line-strong: #364357;
+
+  --ink: #e5eaf1;
+  --ink-muted: #9aa6b8;
+  --ink-subtle: #8792a6;
+  --ink-inverse: #0e131b;
+
+  --accent: #7c95ff;
+  --accent-hover: #97abff;
+  --accent-soft: #1d2748;
+  --accent-ink: #a9baff;
+
+  --amber: #f0b43c;
+  --amber-soft: #3a2d13;
+  --success: #45c08a;
+  --success-soft: #133326;
+  --danger: #f2665b;
+  --danger-soft: #3d1a19;
+
+  --focus: #97abff;
+  --overlay: rgb(4 7 12 / 0.65);
+  --shadow-float: 0 16px 40px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.3);
+
+  --chart-1: #7c95ff;
+  --chart-2: #3cc4c1;
+  --chart-3: #f0a33c;
+  --chart-4: #b48cff;
+  --chart-5: #ff7eb6;
+  --chart-6: #8d9ab0;
+  --chart-grid: #232d3d;
+  --chart-axis: #748196;
+
+  --pulse-0: #1f2837;
+  --pulse-1: #2b3a66;
+  --pulse-2: #3f56a3;
+  --pulse-3: #5d78e0;
+  --pulse-4: #8ba2ff;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-focus: var(--focus);
+  --color-overlay: var(--overlay);
+  --color-pulse-0: var(--pulse-0);
+  --color-pulse-1: var(--pulse-1);
+  --color-pulse-2: var(--pulse-2);
+  --color-pulse-3: var(--pulse-3);
+  --color-pulse-4: var(--pulse-4);
+
+  --shadow-float: var(--shadow-float);
+}
+
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+  --radius-sheet: 1rem;
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-scale-in: scale-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-slide-in-left: slide-in-left 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-rise: rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-2px);
+    }
+  }
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+    font-feature-settings: 'ss02';
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight text-ink;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Numbers in data views line up in columns. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Applied briefly while switching themes so colours cross-fade instead of snapping. */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease,
+    stroke 200ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
