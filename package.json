@@ -1,0 +1,41 @@
+{
+  "name": "devpulse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DevPulse — developer productivity and coding analytics platform",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm run dev -w @devpulse/server\" \"npm run dev -w @devpulse/web\"",
+    "build": "npm run build -w @devpulse/server && npm run build -w @devpulse/web",
+    "start": "npm run start -w @devpulse/server",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "npm run db:migrate -w @devpulse/server",
+    "db:deploy": "npm run db:deploy -w @devpulse/server",
+    "db:seed": "npm run db:seed -w @devpulse/server",
+    "db:reset": "npm run db:reset -w @devpulse/server",
+    "db:studio": "npm run db:studio -w @devpulse/server"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.0"
+  }
+}

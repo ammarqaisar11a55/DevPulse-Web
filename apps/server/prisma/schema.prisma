@@ -1,0 +1,367 @@
+// DevPulse database schema.
+// Conventions: camelCase fields mapped to snake_case columns/tables, UUID primary keys,
+// `createdAt`/`updatedAt` timestamps, and user-owned rows cascade on user deletion.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum RepositoryProvider {
+  GITHUB
+  GITLAB
+  BITBUCKET
+  AZURE_DEVOPS
+  OTHER
+}
+
+enum CodingSessionStatus {
+  ACTIVE
+  ENDED
+}
+
+enum CodingSessionSource {
+  EXTENSION
+  MANUAL
+  IMPORT
+}
+
+enum ActivityEventType {
+  ACTIVITY
+  SESSION_STARTED
+  SESSION_ENDED
+  FILE_OPENED
+  FILE_CHANGED
+  IDLE_STARTED
+  IDLE_ENDED
+  GIT_COMMIT
+  DEBUG_STARTED
+  DEBUG_STOPPED
+}
+
+enum GoalMetric {
+  CODING_TIME
+  SESSIONS
+}
+
+enum GoalPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum NotificationType {
+  GOAL_PROGRESS
+  GOAL_COMPLETED
+  DEVICE_CONNECTED
+  DEVICE_REVOKED
+  SECURITY
+  SESSION_RECORDED
+  SYSTEM
+}
+
+// ─── Identity ────────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  /// Stored lower-cased; uniqueness is case-insensitive by construction.
+  email             String    @unique
+  /// Stored lower-cased.
+  username          String    @unique
+  fullName          String    @map("full_name")
+  passwordHash      String    @map("password_hash")
+  avatarUrl         String?   @map("avatar_url")
+  bio               String?
+  timezone          String    @default("UTC")
+  /// Marks development/demo accounts created by the seed script.
+  isDemo            Boolean   @default(false) @map("is_demo")
+  passwordChangedAt DateTime? @map("password_changed_at")
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  settings            UserSetting?
+  authSessions        AuthSession[]
+  passwordResetTokens PasswordResetToken[]
+  projects            Project[]
+  codingSessions      CodingSession[]
+  activityEvents      ActivityEvent[]
+  devices             Device[]
+  pairingKeys         PairingKey[]
+  goals               Goal[]
+  notifications       Notification[]
+
+  @@map("users")
+}
+
+model UserSetting {
+  userId             String          @id @map("user_id") @db.Uuid
+  theme              ThemePreference @default(SYSTEM)
+  /// 0 = Sunday, 1 = Monday.
+  weekStartsOn       Int             @default(1) @map("week_starts_on") @db.SmallInt
+  /// Idle threshold the extension should apply before pausing active time.
+  idleTimeoutMinutes Int             @default(5) @map("idle_timeout_minutes") @db.SmallInt
+  /// Privacy controls honoured by the extension.
+  trackBranchNames   Boolean         @default(true) @map("track_branch_names")
+  trackRepositoryUrl Boolean         @default(true) @map("track_repository_url")
+  emailNotifications Boolean         @default(true) @map("email_notifications")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+/// A signed-in browser session. Holds the hash of the current rotating refresh token.
+model AuthSession {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  refreshTokenHash  String    @unique @map("refresh_token_hash")
+  /// Hash of the token that was rotated out, used for reuse detection and a short
+  /// grace window for concurrent refreshes from multiple tabs.
+  previousTokenHash String?   @unique @map("previous_token_hash")
+  rotatedAt         DateTime? @map("rotated_at")
+  userAgent         String?   @map("user_agent")
+  ipAddress         String?   @map("ip_address")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  lastUsedAt        DateTime  @default(now()) @map("last_used_at")
+  expiresAt         DateTime  @map("expires_at")
+  revokedAt         DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("auth_sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+
+model Project {
+  id                 String              @id @default(uuid()) @db.Uuid
+  userId             String              @map("user_id") @db.Uuid
+  name               String
+  slug               String
+  description        String?
+  repositoryUrl      String?             @map("repository_url")
+  repositoryProvider RepositoryProvider? @map("repository_provider")
+  primaryLanguage    String?             @map("primary_language")
+  /// Hex colour used to identify the project in charts.
+  color              String?
+  lastActivityAt     DateTime?           @map("last_activity_at")
+  archivedAt         DateTime?           @map("archived_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codingSessions CodingSession[]
+  activityEvents ActivityEvent[]
+  goals          Goal[]
+
+  @@unique([userId, slug])
+  @@index([userId, archivedAt, lastActivityAt])
+  @@index([userId, repositoryUrl])
+  @@map("projects")
+}
+
+// ─── Integrations ────────────────────────────────────────────────────────────
+
+/// Short-lived, single-use code shown in the web app and typed into the extension.
+/// Only an HMAC of the key is stored.
+model PairingKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  keyHash    String    @unique @map("key_hash")
+  /// Last four characters, safe to display in the key history.
+  hint       String
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device?
+
+  @@index([userId, createdAt])
+  @@map("pairing_keys")
+}
+
+/// An editor installation paired with an account. Authenticates with a long-lived
+/// device credential of which only a SHA-256 hash is stored.
+model Device {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  pairingKeyId     String?   @unique @map("pairing_key_id") @db.Uuid
+  name             String
+  platform         String?
+  hostname         String?
+  editor           String    @default("vscode")
+  editorVersion    String?   @map("editor_version")
+  extensionVersion String?   @map("extension_version")
+  credentialHash   String    @unique @map("credential_hash")
+  /// Non-secret prefix of the credential, shown to help users identify a device.
+  credentialPrefix String    @map("credential_prefix")
+  lastSeenAt       DateTime? @map("last_seen_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pairingKey     PairingKey?     @relation(fields: [pairingKeyId], references: [id], onDelete: SetNull)
+  codingSessions CodingSession[]
+  activityEvents ActivityEvent[]
+
+  @@index([userId, revokedAt])
+  @@map("devices")
+}
+
+// ─── Activity ────────────────────────────────────────────────────────────────
+
+model CodingSession {
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @map("user_id") @db.Uuid
+  projectId       String?             @map("project_id") @db.Uuid
+  deviceId        String?             @map("device_id") @db.Uuid
+  /// Idempotency key supplied by the extension so retried requests do not duplicate sessions.
+  clientSessionId String?             @map("client_session_id")
+  source          CodingSessionSource @default(MANUAL)
+  status          CodingSessionStatus @default(ACTIVE)
+  title           String?
+  startedAt       DateTime            @map("started_at")
+  endedAt         DateTime?           @map("ended_at")
+  lastHeartbeatAt DateTime?           @map("last_heartbeat_at")
+  durationSeconds Int                 @default(0) @map("duration_seconds")
+  activeSeconds   Int                 @default(0) @map("active_seconds")
+  idleSeconds     Int                 @default(0) @map("idle_seconds")
+  language        String?
+  repository      String?
+  branch          String?
+  editor          String?
+  filesChanged    Int                 @default(0) @map("files_changed")
+  linesAdded      Int                 @default(0) @map("lines_added")
+  linesRemoved    Int                 @default(0) @map("lines_removed")
+  commits         Int                 @default(0)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  device         Device?           @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  languages      SessionLanguage[]
+  activityEvents ActivityEvent[]
+
+  @@unique([deviceId, clientSessionId])
+  @@index([userId, startedAt])
+  @@index([userId, projectId, startedAt])
+  @@index([userId, status])
+  @@index([deviceId, startedAt])
+  @@map("coding_sessions")
+}
+
+/// Per-language breakdown of a session's active time.
+model SessionLanguage {
+  sessionId     String @map("session_id") @db.Uuid
+  language      String
+  activeSeconds Int    @map("active_seconds")
+
+  session CodingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, language])
+  @@map("session_languages")
+}
+
+/// Development metadata emitted by the extension. Never contains source code.
+model ActivityEvent {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String            @map("user_id") @db.Uuid
+  deviceId      String?           @map("device_id") @db.Uuid
+  projectId     String?           @map("project_id") @db.Uuid
+  sessionId     String?           @map("session_id") @db.Uuid
+  /// Idempotency key supplied by the client.
+  clientEventId String?           @map("client_event_id")
+  type          ActivityEventType
+  occurredAt    DateTime          @map("occurred_at")
+  language      String?
+  /// Small, schema-validated metadata (e.g. file extension, commit count). No file contents.
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device  Device?        @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  project Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  session CodingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@unique([deviceId, clientEventId])
+  @@index([userId, occurredAt])
+  @@index([sessionId])
+  @@map("activity_events")
+}
+
+// ─── Goals & notifications ───────────────────────────────────────────────────
+
+model Goal {
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  /// Optional: scope the goal to a single project.
+  projectId  String?    @map("project_id") @db.Uuid
+  metric     GoalMetric
+  period     GoalPeriod
+  /// Seconds for CODING_TIME goals, a count for SESSIONS goals.
+  target     Int
+  title      String?
+  archivedAt DateTime?  @map("archived_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, archivedAt])
+  @@map("goals")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String
+  body      String?
+  /// In-app route to open when the notification is clicked.
+  link      String?
+  /// Prevents duplicate notifications for the same event (e.g. one goal completion per period).
+  dedupeKey String?          @map("dedupe_key")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
