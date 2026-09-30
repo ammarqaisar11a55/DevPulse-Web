@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: devpulse
+          POSTGRES_PASSWORD: devpulse
+          POSTGRES_DB: devpulse_test
+          # Run in a non-UTC zone so time-zone bugs surface in CI.
+          TZ: Asia/Karachi
+          PGTZ: Asia/Karachi
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U devpulse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://devpulse:devpulse@localhost:5432/devpulse_test?schema=public
+      JWT_SECRET: ci-jwt-secret-0123456789abcdef0123456789abcdef
+      REFRESH_SECRET: ci-refresh-secret-0123456789abcdef0123456789ab
+      PAIRING_SECRET: ci-pairing-secret-0123456789abcdef0123456789ab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://unused
