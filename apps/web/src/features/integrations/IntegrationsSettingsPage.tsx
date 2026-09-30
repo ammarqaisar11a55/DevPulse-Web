@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { SkeletonRows } from '@/components/ui/Skeleton';
+import { devicesApi, devicesKey } from '@/features/devices/devices-api';
 import { ErrorState } from '@/components/ui/States';
 import { ConnectEditorPanel } from './components/ConnectEditorPanel';
 import { KeyHistoryPanel } from './components/KeyHistoryPanel';
@@ -11,11 +12,15 @@ export function IntegrationsSettingsPage() {
     queryKey: integrationKeys.pairingKeys,
     queryFn: ({ signal }) => integrationsApi.listKeys(signal),
   });
-  const pairedCount = keys.data?.filter((key) => key.device).length ?? 0;
+  const devices = useQuery({
+    queryKey: devicesKey,
+    queryFn: ({ signal }) => devicesApi.list(signal),
+  });
+  const connectedCount = devices.data?.filter((device) => !device.revokedAt).length ?? 0;
 
   return (
     <>
-      <ConnectEditorPanel connectedCount={pairedCount} />
+      <ConnectEditorPanel connectedCount={connectedCount} />
       <TrackingPrivacyPanel />
       {keys.isPending ? (
         <SkeletonRows rows={2} />

@@ -72,3 +72,28 @@ export interface PairDeviceResponse {
   account: { username: string; fullName: string };
   config: ExtensionConfigDto;
 }
+
+export const updateDeviceSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Enter a device name')
+    .max(60, 'Name must be at most 60 characters'),
+});
+export type UpdateDeviceInput = z.input<typeof updateDeviceSchema>;
+
+export interface DeviceDto {
+  id: string;
+  name: string;
+  platform: string | null;
+  editor: string;
+  editorVersion: string | null;
+  extensionVersion: string | null;
+  /** Non-secret credential prefix to help tell devices apart. */
+  credentialPrefix: string;
+  lastSeenAt: string | null;
+  createdAt: string;
+  revokedAt: string | null;
+  totalSeconds: number;
+  sessionCount: number;
+}

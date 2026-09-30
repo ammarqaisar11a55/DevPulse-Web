@@ -25,6 +25,7 @@ const appRoutes: RouteObject[] = [
     path: 'projects/:projectId',
     lazy: page(() => import('@/features/projects/ProjectDetailPage'), 'ProjectDetailPage'),
   },
+  { path: 'devices', lazy: page(() => import('@/features/devices/DevicesPage'), 'DevicesPage') },
   {
     path: 'leaderboard',
     lazy: page(() => import('@/features/leaderboard/LeaderboardPage'), 'LeaderboardPage'),
