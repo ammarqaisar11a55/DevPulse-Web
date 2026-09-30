@@ -3,6 +3,7 @@ import {
   createSessionSchema,
   idParamsSchema,
   ingestEventsSchema,
+  updateDeviceSchema,
   updateSessionSchema,
 } from '@devpulse/shared';
 import type { z } from 'zod';
@@ -11,6 +12,8 @@ import { createRateLimiter } from '../../middleware/rate-limit';
 import { valid, validate } from '../../middleware/validate';
 import { emitDomainEvent } from '../../utils/domain-events';
 import { activityService } from '../activity/activity.service';
+import { analyticsService } from '../analytics/analytics.service';
+import { devicesService } from '../devices/devices.service';
 import { sessionsService } from '../sessions/sessions.service';
 import { currentDevice, requireDevice } from './device-auth';
 import { extensionConfig } from './pairing.service';
@@ -83,6 +86,19 @@ extensionRouter.get('/config', async (req, res) => {
     }),
   ]);
   res.json({ data: { config, device, account: user } });
+});
+
+/** Lets the editor rename its own device; the web Devices page shows the same name. */
+extensionRouter.patch('/device', validate('body', updateDeviceSchema), async (req, res) => {
+  const { userId, deviceId } = currentDevice(req);
+  const { name } = valid<{ name: string }>(req, 'body');
+  const device = await devicesService.rename(userId, deviceId, name);
+  res.json({ data: { id: device.id, name: device.name } });
+});
+
+/** Account-wide active time today and this week, for the editor's status bar. */
+extensionRouter.get('/summary', async (req, res) => {
+  res.json({ data: await analyticsService.editorSummary(currentDevice(req).userId) });
 });
 
 /** Lets the extension disconnect itself (e.g. the user signs out in the editor). */

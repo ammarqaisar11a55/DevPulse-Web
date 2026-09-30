@@ -290,4 +290,58 @@ describe('device-authenticated ingestion', () => {
       401,
     );
   });
+
+  it('lets a device rename itself', async () => {
+    const { owner, credential, deviceId } = await pairedDevice();
+    const auth = { Authorization: `Bearer ${credential}` };
+    const res = await request(app)
+      .patch('/api/v1/integrations/extension/device')
+      .set(auth)
+      .send({ name: '  Work Laptop ' });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ id: deviceId, name: 'Work Laptop' });
+
+    const listed = await request(app).get('/api/v1/devices').set(owner.auth);
+    expect(listed.body.data[0].name).toBe('Work Laptop');
+
+    const invalid = await request(app)
+      .patch('/api/v1/integrations/extension/device')
+      .set(auth)
+      .send({ name: '' });
+    expect(invalid.status).toBe(400);
+    expect(
+      (
+        await request(app)
+          .patch('/api/v1/integrations/extension/device')
+          .set(owner.auth)
+          .send({ name: 'x' })
+      ).status,
+    ).toBe(401);
+  });
+
+  it("reports the account's coding time today and this week", async () => {
+    const { credential } = await pairedDevice();
+    const auth = { Authorization: `Bearer ${credential}` };
+    const startedAt = new Date(Date.now() - 30 * 60_000);
+    await request(app)
+      .post('/api/v1/activity/sessions')
+      .set(auth)
+      .send({
+        clientSessionId: 'summary-1',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date(startedAt.getTime() + 20 * 60_000).toISOString(),
+        activeSeconds: 900,
+      })
+      .expect(201);
+
+    const res = await request(app).get('/api/v1/integrations/extension/summary').set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ timezone: expect.any(String) });
+    expect(res.body.data.weekSeconds).toBeGreaterThanOrEqual(res.body.data.todaySeconds);
+    // 900 s, unless a day or week boundary fell inside the last half hour.
+    expect(res.body.data.weekSeconds).toBeGreaterThan(0);
+    expect(res.body.data.weekSeconds).toBeLessThanOrEqual(900);
+
+    expect((await request(app).get('/api/v1/integrations/extension/summary')).status).toBe(401);
+  });
 });

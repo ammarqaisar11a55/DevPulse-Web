@@ -5,6 +5,7 @@ import {
   type analyticsQuerySchema,
   type BreakdownItem,
   type DayBlock,
+  type ExtensionSummaryDto,
   type Granularity,
   type OverviewDto,
   type SeriesPoint,
@@ -154,6 +155,18 @@ async function totalsFor(
 }
 
 export const analyticsService = {
+  /** Today's and this week's active time only; cheap enough for editors to poll. */
+  async editorSummary(userId: string, now = new Date()): Promise<ExtensionSummaryDto> {
+    const { timezone, weekStartsOn } = await getUserCalendar(userId);
+    const b = calendarBoundaries(now, timezone, weekStartsOn);
+    const scope = { userId };
+    const [today, week] = await Promise.all([
+      analyticsRepository.totals(scope, b.todayStart, now),
+      analyticsRepository.totals(scope, b.weekStart, now),
+    ]);
+    return { timezone, todaySeconds: today.seconds, weekSeconds: week.seconds };
+  },
+
   /** Everything the dashboard needs in one round trip. */
   async overview(userId: string, now = new Date()): Promise<OverviewDto> {
     const { timezone, weekStartsOn } = await getUserCalendar(userId);

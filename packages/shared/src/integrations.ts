@@ -65,6 +65,13 @@ export interface ExtensionConfigDto {
   heartbeatIntervalSeconds: number;
 }
 
+/** Account-wide coding time for the editor's status bar, in the user's time zone. */
+export interface ExtensionSummaryDto {
+  timezone: string;
+  todaySeconds: number;
+  weekSeconds: number;
+}
+
 export interface PairDeviceResponse {
   /** Long-lived device credential. Shown once; store it in the editor's secret storage. */
   credential: string;

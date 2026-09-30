@@ -261,6 +261,8 @@ boundary (midnight, an hour, a week) is split in proportion to how much of it fa
 | DELETE | `/integrations/pairing-keys/:id`     | user   | Revoke an unused key. `204`                                                    |
 | POST   | `/integrations/pair`                 | none   | Exchange a key for a device credential. `201`                                  |
 | GET    | `/integrations/extension/config`     | device | Tracking preferences, device and account summary                               |
+| GET    | `/integrations/extension/summary`    | device | Account-wide active seconds `todaySeconds` and `weekSeconds`, and `timezone`   |
+| PATCH  | `/integrations/extension/device`     | device | Rename this device (`name`, 1–60); returns `{ id, name }`                      |
 | POST   | `/integrations/extension/disconnect` | device | Revoke this device's own credential. `204`                                     |
 
 ### Devices
@@ -458,7 +460,14 @@ cannot be sent. Retries are deduplicated by `clientEventId`.
 - `429`: back off using the `RateLimit` header and keep events queued locally.
 - Network errors and `5xx`: retry with exponential backoff; idempotency keys make retries safe.
 
-### 6. Disconnect
+### 6. Show totals and rename the device
+
+`GET /integrations/extension/summary` returns today's and this week's active time for the whole
+account (all devices), computed in the user's time zone; poll it every few minutes at most.
+`PATCH /integrations/extension/device` with `{ "name": "Work Laptop" }` renames the device; the
+web Devices page shows the same name.
+
+### 7. Disconnect
 
 When the user signs out in the editor, call `POST /integrations/extension/disconnect`, then delete
 the credential from SecretStorage.
