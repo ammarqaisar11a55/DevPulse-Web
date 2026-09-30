@@ -1,6 +1,7 @@
 import { createApp } from './app';
 import { env } from './config/env';
 import { prisma } from './database/prisma';
+import { startBackgroundJobs } from './jobs';
 import { logger } from './utils/logger';
 
 const app = createApp();
@@ -8,6 +9,7 @@ const app = createApp();
 const server = app.listen(env.PORT, () => {
   logger.info(`DevPulse API listening on ${env.API_URL} (port ${env.PORT})`);
 });
+const stopJobs = startBackgroundJobs();
 
 let shuttingDown = false;
 async function shutdown(signal: string) {
@@ -15,6 +17,7 @@ async function shutdown(signal: string) {
   shuttingDown = true;
   logger.info(`${signal} received, shutting down`);
 
+  stopJobs();
   server.close(async () => {
     await prisma.$disconnect();
     process.exit(0);

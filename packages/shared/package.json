@@ -5,7 +5,8 @@
   "description": "Shared API contracts, validation schemas and constants for DevPulse clients and server",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./time": "./src/time.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

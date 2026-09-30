@@ -1,8 +1,8 @@
+import { MAX_SESSION_SECONDS } from '@devpulse/shared';
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 
-/** Upper bound on a single session's length; keeps range scans on (user_id, started_at) bounded. */
-export const MAX_SESSION_SECONDS = 24 * 60 * 60;
+// Sessions are capped at MAX_SESSION_SECONDS, which keeps range scans on (user_id, started_at) bounded.
 
 export interface SessionScope {
   userId: string;
