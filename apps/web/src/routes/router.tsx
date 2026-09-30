@@ -49,6 +49,13 @@ const appRoutes: RouteObject[] = [
         ),
       },
       {
+        path: 'integrations',
+        lazy: page(
+          () => import('@/features/integrations/IntegrationsSettingsPage'),
+          'IntegrationsSettingsPage',
+        ),
+      },
+      {
         path: 'security',
         lazy: page(
           () => import('@/features/settings/pages/SecuritySettingsPage'),

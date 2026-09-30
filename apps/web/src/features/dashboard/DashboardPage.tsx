@@ -62,7 +62,7 @@ function NoActivityYet({ onLog }: { onLog: () => void }) {
         description="Connect the DevPulse VS Code extension to begin tracking your development activity automatically, or log a session by hand."
         action={
           <div className="flex flex-wrap justify-center gap-2">
-            <ButtonLink to="/devices">Connect VS Code</ButtonLink>
+            <ButtonLink to="/settings/integrations">Connect VS Code</ButtonLink>
             <Button variant="secondary" leadingIcon={<Plus />} onClick={onLog}>
               Log a session
             </Button>

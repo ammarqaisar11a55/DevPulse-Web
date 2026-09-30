@@ -1,6 +1,7 @@
-/** Settings navigation. Integrations is added by the integrations feature. */
+/** Settings navigation. */
 export const SETTINGS_SECTIONS = [
   { to: '/settings/profile', label: 'Profile' },
   { to: '/settings/appearance', label: 'Appearance' },
   { to: '/settings/security', label: 'Security' },
+  { to: '/settings/integrations', label: 'Integrations' },
 ];
