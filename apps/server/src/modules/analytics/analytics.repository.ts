@@ -126,6 +126,64 @@ export const analyticsRepository = {
     return rows[0]?.count ?? 0;
   },
 
+  /** Active seconds per local hour of day (0–23) across [from, to), split across hour boundaries. */
+  async hourOfDay(scope: SessionScope, from: Date, to: Date, timeZone: string) {
+    const hourStart = Prisma.sql`(h AT TIME ZONE ${timeZone})`;
+    const hourEnd = Prisma.sql`((h + interval '1 hour') AT TIME ZONE ${timeZone})`;
+    const rows = await prisma.$queryRaw<{ hour: number; seconds: number }[]>`
+      SELECT EXTRACT(HOUR FROM h)::int AS hour,
+             COALESCE(SUM(cs.active_seconds * ${overlapRatio(hourStart, hourEnd)}), 0)::float8 AS seconds
+      FROM generate_series(
+        date_trunc('hour', ${at(from)} AT TIME ZONE ${timeZone}),
+        (${at(to)} AT TIME ZONE ${timeZone}) - interval '1 second',
+        interval '1 hour'
+      ) AS h
+      LEFT JOIN coding_sessions cs ON ${scopeConditions(scope)} AND ${overlapConditions(hourStart, hourEnd)}
+      GROUP BY 1
+    `;
+    const byHour = new Map(rows.map((row) => [row.hour, Math.round(row.seconds)]));
+    return Array.from({ length: 24 }, (_, hour) => ({ hour, seconds: byHour.get(hour) ?? 0 }));
+  },
+
+  /** Active seconds per device, largest first. */
+  async byDevice(scope: SessionScope, from: Date, to: Date) {
+    const rows = await prisma.$queryRaw<
+      { id: string | null; label: string | null; seconds: number }[]
+    >`
+      SELECT d.id, d.name AS label, SUM(cs.active_seconds * ${overlapRatio(at(from), at(to))})::float8 AS seconds
+      FROM coding_sessions cs
+      LEFT JOIN devices d ON d.id = cs.device_id
+      WHERE ${sessionsOverlapping(scope, from, to)}
+      GROUP BY d.id, d.name
+      HAVING SUM(cs.active_seconds) > 0
+      ORDER BY seconds DESC
+    `;
+    return rows.map((row) => ({
+      id: row.id,
+      label: row.label ?? 'Logged manually',
+      color: null,
+      seconds: Math.round(row.seconds),
+    }));
+  },
+
+  /** Sessions that started in [from, to), bucketed by active length. */
+  async sessionLengths(scope: SessionScope, from: Date, to: Date) {
+    return prisma.$queryRaw<
+      { bucket: 'short' | 'medium' | 'long'; sessions: number; seconds: number }[]
+    >`
+      SELECT CASE
+               WHEN cs.active_seconds < 1800 THEN 'short'
+               WHEN cs.active_seconds < 5400 THEN 'medium'
+               ELSE 'long'
+             END AS bucket,
+             COUNT(*)::int AS sessions,
+             COALESCE(SUM(cs.active_seconds), 0)::int AS seconds
+      FROM coding_sessions cs
+      WHERE ${scopeConditions(scope)} AND cs.started_at >= ${at(from)} AND cs.started_at < ${at(to)}
+      GROUP BY 1
+    `;
+  },
+
   totalProjectCount(userId: string) {
     return prisma.project.count({ where: { userId, archivedAt: null } });
   },

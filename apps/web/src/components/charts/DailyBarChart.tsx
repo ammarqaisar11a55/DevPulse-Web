@@ -1,4 +1,4 @@
-import type { DailyPoint } from '@devpulse/shared';
+import type { DailyPoint, Granularity } from '@devpulse/shared';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDuration } from '@/lib/format';
 import { AXIS_TICK, BAR_RADIUS, GRID_STROKE, hourTicks, hoursTick } from './axis';
@@ -8,7 +8,9 @@ import { ChartTooltipCard } from './ChartTooltip';
 interface DailyBarChartProps {
   data: DailyPoint[];
   height?: number;
-  /** Label format for the x axis. */
+  /** Bucket size of each point; dates are the first day of the bucket. */
+  granularity?: Granularity;
+  /** Label format for daily x-axis ticks. */
   tickFormat?: 'weekday' | 'day';
 }
 
@@ -28,23 +30,43 @@ const longDate = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
   timeZone: 'UTC',
 });
+const monthName = new Intl.DateTimeFormat(undefined, { month: 'short', timeZone: 'UTC' });
+const monthLong = new Intl.DateTimeFormat(undefined, {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
 
-/** Single-series bar chart of active coding time per day. */
-export function DailyBarChart({ data, height = 240, tickFormat = 'weekday' }: DailyBarChartProps) {
+/** Single-series bar chart of active coding time per day, week or month. */
+export function DailyBarChart({
+  data,
+  height = 240,
+  granularity = 'day',
+  tickFormat = 'weekday',
+}: DailyBarChartProps) {
   const max = Math.max(0, ...data.map((point) => point.seconds));
   const ticks = hourTicks(max);
   const total = data.reduce((sum, point) => sum + point.seconds, 0);
-  const label = (key: string) =>
-    tickFormat === 'weekday' ? weekday.format(dateOf(key)) : shortDate.format(dateOf(key));
+
+  const tickLabel = (key: string) => {
+    if (granularity === 'month') return monthName.format(dateOf(key));
+    if (granularity === 'week' || tickFormat === 'day') return shortDate.format(dateOf(key));
+    return weekday.format(dateOf(key));
+  };
+  const periodTitle = (key: string) => {
+    if (granularity === 'month') return monthLong.format(dateOf(key));
+    if (granularity === 'week') return `Week of ${shortDate.format(dateOf(key))}`;
+    return longDate.format(dateOf(key));
+  };
 
   return (
     <ChartFrame
       height={height}
-      summary={`Coding time per day, ${formatDuration(total)} in total over ${data.length} days.`}
+      summary={`Coding time per ${granularity}, ${formatDuration(total)} in total over ${data.length} ${granularity}s.`}
       table={{
-        headers: ['Day', 'Coding time', 'Sessions'],
+        headers: ['Period', 'Coding time', 'Sessions'],
         rows: data.map((point) => [
-          longDate.format(dateOf(point.date)),
+          periodTitle(point.date),
           formatDuration(point.seconds),
           point.sessions,
         ]),
@@ -59,7 +81,7 @@ export function DailyBarChart({ data, height = 240, tickFormat = 'weekday' }: Da
           <CartesianGrid vertical={false} stroke={GRID_STROKE} />
           <XAxis
             dataKey="date"
-            tickFormatter={label}
+            tickFormatter={tickLabel}
             tick={AXIS_TICK}
             tickLine={false}
             axisLine={{ stroke: GRID_STROKE }}
@@ -82,7 +104,7 @@ export function DailyBarChart({ data, height = 240, tickFormat = 'weekday' }: Da
               if (!active || !point) return null;
               return (
                 <ChartTooltipCard
-                  title={longDate.format(dateOf(point.date))}
+                  title={periodTitle(point.date)}
                   rows={[
                     { label: 'Coding time', value: formatDuration(point.seconds) },
                     { label: 'Sessions', value: point.sessions },
