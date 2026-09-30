@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { loginSchema, type LoginInput } from '@devpulse/shared';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
@@ -12,11 +12,9 @@ import { authApi } from '../auth-api';
 import { useAuth } from '../auth-context';
 import { AuthLayout } from '../AuthLayout';
 import { PasswordInput } from '../PasswordInput';
-import { safeNextPath } from '../redirect';
 
 export function LoginPage() {
   const { acceptSession } = useAuth();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -28,10 +26,8 @@ export function LoginPage() {
 
   const login = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (response) => {
-      acceptSession(response);
-      navigate(safeNextPath(params.get('next')), { replace: true });
-    },
+    // GuestOnly performs the redirect (to ?next= or the dashboard) once the session is set.
+    onSuccess: acceptSession,
     onError: (error) => setFormError(getErrorMessage(error)),
   });
 

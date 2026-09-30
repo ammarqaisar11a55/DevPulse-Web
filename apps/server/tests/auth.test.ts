@@ -55,15 +55,13 @@ describe('registration', () => {
   });
 
   it('validates input', async () => {
-    const res = await request(app)
-      .post('/api/v1/auth/register')
-      .send({
-        fullName: '',
-        username: 'a',
-        email: 'nope',
-        password: 'short',
-        confirmPassword: 'different',
-      });
+    const res = await request(app).post('/api/v1/auth/register').send({
+      fullName: '',
+      username: 'a',
+      email: 'nope',
+      password: 'short',
+      confirmPassword: 'different',
+    });
 
     expect(res.status).toBe(400);
     const paths = res.body.error.details.map((detail: { path: string }) => detail.path);

@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { PASSWORD_MIN_LENGTH, registerSchema, type RegisterInput } from '@devpulse/shared';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
@@ -17,7 +17,6 @@ const FIELDS = ['fullName', 'username', 'email', 'password', 'confirmPassword'] 
 
 export function RegisterPage() {
   const { acceptSession } = useAuth();
-  const navigate = useNavigate();
   const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm<RegisterInput>({
@@ -29,10 +28,7 @@ export function RegisterPage() {
 
   const register = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (response) => {
-      acceptSession(response);
-      navigate('/dashboard', { replace: true });
-    },
+    onSuccess: acceptSession,
     onError: (error) => setFormError(applyServerErrors(error, form.setError, FIELDS)),
   });
 

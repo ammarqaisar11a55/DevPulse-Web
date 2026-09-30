@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuthResponse, UserDto } from '@devpulse/shared';
-import { configureAuthHandlers, refreshAccessToken, tokenStore } from '@/lib/api-client';
+import { ApiError, configureAuthHandlers, refreshAccessToken, tokenStore } from '@/lib/api-client';
 import { authApi } from './auth-api';
 import { AuthContext, type AuthStatus } from './auth-context';
 
@@ -30,6 +30,26 @@ function writeHint(active: boolean) {
 
 let bootstrap: Promise<AuthResponse | null> | null = null;
 
+const RETRY_DELAYS_MS = [500, 1500];
+
+/**
+ * Refreshes the session, retrying transient failures (network errors, 5xx during a deploy).
+ * Only an explicit 401/403 means the session is gone.
+ */
+async function refreshWithRetry(): Promise<AuthResponse | null> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await authApi.refresh();
+    } catch (error) {
+      const definitive =
+        error instanceof ApiError && (error.status === 401 || error.status === 403);
+      const delay = RETRY_DELAYS_MS[attempt];
+      if (definitive || delay === undefined) return null;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<AuthStatus>(() =>
@@ -55,13 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     configureAuthHandlers({
       refresh: async () => {
-        try {
-          const response = await authApi.refresh();
-          acceptSession(response);
-          return response.accessToken;
-        } catch {
-          return null;
-        }
+        const response = await refreshWithRetry();
+        if (!response) return null;
+        acceptSession(response);
+        return response.accessToken;
       },
       onUnauthorized: clearSession,
     });

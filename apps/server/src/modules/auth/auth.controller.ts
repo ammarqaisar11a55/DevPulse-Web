@@ -5,7 +5,9 @@ import { authService, type ClientInfo, type IssuedSession } from './auth.service
 import { REFRESH_COOKIE, refreshCookieOptions } from './auth.tokens';
 
 function clientInfo(req: Request): ClientInfo {
-  return { userAgent: req.get('user-agent') ?? undefined, ipAddress: req.ip };
+  // Normalise IPv4-mapped IPv6 addresses (::ffff:1.2.3.4) to plain IPv4 for display.
+  const ipAddress = req.ip?.replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/, '');
+  return { userAgent: req.get('user-agent') ?? undefined, ipAddress };
 }
 
 function sendSession(res: Response, session: IssuedSession, status = 200) {
@@ -69,11 +71,9 @@ export const authController = {
 
   forgotPassword: (async (req, res) => {
     await authService.requestPasswordReset(valid(req, 'body'));
-    res
-      .status(202)
-      .json({
-        data: { message: 'If an account exists for that email, a reset link is on its way.' },
-      });
+    res.status(202).json({
+      data: { message: 'If an account exists for that email, a reset link is on its way.' },
+    });
   }) satisfies RequestHandler,
 
   resetPassword: (async (req, res) => {

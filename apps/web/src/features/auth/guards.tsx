@@ -1,6 +1,7 @@
-import { Navigate, Outlet, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router';
 import { LogoMark } from '@/components/Logo';
 import { useAuth } from './auth-context';
+import { safeNextPath } from './redirect';
 
 function FullPageLoader() {
   return (
@@ -22,10 +23,11 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-/** Sends signed-in users away from sign-in/registration pages. */
+/** Sends signed-in users away from sign-in/registration pages, honouring ?next=. */
 export function GuestOnly() {
   const { status } = useAuth();
+  const [params] = useSearchParams();
   if (status === 'loading') return <FullPageLoader />;
-  if (status === 'authenticated') return <Navigate to="/dashboard" replace />;
+  if (status === 'authenticated') return <Navigate to={safeNextPath(params.get('next'))} replace />;
   return <Outlet />;
 }

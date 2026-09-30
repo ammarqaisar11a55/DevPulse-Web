@@ -1,16 +1,51 @@
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import type { ComponentType } from 'react';
+import { Navigate, createBrowserRouter, type RouteObject } from 'react-router';
 import { GuestOnly, RequireAuth } from '@/features/auth/guards';
 import { RouteErrorBoundary } from '@/pages/RouteErrorBoundary';
 
+/** Lazily loads a named page component so every route is its own chunk. */
+function page<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
+  return async () => ({ Component: (await load())[name] });
+}
+
 const devRoutes: RouteObject[] = import.meta.env.DEV
-  ? [
-      {
-        path: 'dev/ui',
-        lazy: () =>
-          import('@/pages/dev/UiGalleryPage').then((m) => ({ Component: m.UiGalleryPage })),
-      },
-    ]
+  ? [{ path: 'dev/ui', lazy: page(() => import('@/pages/dev/UiGalleryPage'), 'UiGalleryPage') }]
   : [];
+
+const appRoutes: RouteObject[] = [
+  {
+    path: 'dashboard',
+    lazy: page(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage'),
+  },
+  {
+    path: 'settings',
+    lazy: page(() => import('@/features/settings/SettingsLayout'), 'SettingsLayout'),
+    children: [
+      { index: true, element: <Navigate to="profile" replace /> },
+      {
+        path: 'profile',
+        lazy: page(
+          () => import('@/features/settings/pages/ProfileSettingsPage'),
+          'ProfileSettingsPage',
+        ),
+      },
+      {
+        path: 'appearance',
+        lazy: page(
+          () => import('@/features/settings/pages/AppearanceSettingsPage'),
+          'AppearanceSettingsPage',
+        ),
+      },
+      {
+        path: 'security',
+        lazy: page(
+          () => import('@/features/settings/pages/SecuritySettingsPage'),
+          'SecuritySettingsPage',
+        ),
+      },
+    ],
+  },
+];
 
 export const router = createBrowserRouter([
   {
@@ -18,67 +53,40 @@ export const router = createBrowserRouter([
     // Shown while the first lazy route chunk loads; matches the page background to avoid a flash.
     hydrateFallbackElement: <div className="min-h-dvh bg-canvas" />,
     children: [
-      {
-        index: true,
-        lazy: () => import('@/pages/HomePage').then((m) => ({ Component: m.HomePage })),
-      },
+      { index: true, lazy: page(() => import('@/pages/HomePage'), 'HomePage') },
       {
         element: <GuestOnly />,
         children: [
           {
             path: 'login',
-            lazy: () =>
-              import('@/features/auth/pages/LoginPage').then((m) => ({ Component: m.LoginPage })),
+            lazy: page(() => import('@/features/auth/pages/LoginPage'), 'LoginPage'),
           },
           {
             path: 'register',
-            lazy: () =>
-              import('@/features/auth/pages/RegisterPage').then((m) => ({
-                Component: m.RegisterPage,
-              })),
+            lazy: page(() => import('@/features/auth/pages/RegisterPage'), 'RegisterPage'),
           },
         ],
       },
       {
         path: 'forgot-password',
-        lazy: () =>
-          import('@/features/auth/pages/ForgotPasswordPage').then((m) => ({
-            Component: m.ForgotPasswordPage,
-          })),
+        lazy: page(() => import('@/features/auth/pages/ForgotPasswordPage'), 'ForgotPasswordPage'),
       },
       {
         path: 'reset-password',
-        lazy: () =>
-          import('@/features/auth/pages/ResetPasswordPage').then((m) => ({
-            Component: m.ResetPasswordPage,
-          })),
+        lazy: page(() => import('@/features/auth/pages/ResetPasswordPage'), 'ResetPasswordPage'),
       },
       {
         element: <RequireAuth />,
         children: [
           {
-            lazy: () =>
-              import('@/layouts/AuthenticatedLayout').then((m) => ({
-                Component: m.AuthenticatedLayout,
-              })),
+            lazy: page(() => import('@/layouts/AuthenticatedLayout'), 'AuthenticatedLayout'),
             errorElement: <RouteErrorBoundary />,
-            children: [
-              {
-                path: 'dashboard',
-                lazy: () =>
-                  import('@/features/dashboard/DashboardPage').then((m) => ({
-                    Component: m.DashboardPage,
-                  })),
-              },
-            ],
+            children: appRoutes,
           },
         ],
       },
       ...devRoutes,
-      {
-        path: '*',
-        lazy: () => import('@/pages/NotFoundPage').then((m) => ({ Component: m.NotFoundPage })),
-      },
+      { path: '*', lazy: page(() => import('@/pages/NotFoundPage'), 'NotFoundPage') },
     ],
   },
 ]);
