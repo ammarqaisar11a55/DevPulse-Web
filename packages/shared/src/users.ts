@@ -65,6 +65,7 @@ export const updateSettingsSchema = z
     trackBranchNames: z.boolean(),
     trackRepositoryUrl: z.boolean(),
     emailNotifications: z.boolean(),
+    showOnLeaderboard: z.boolean(),
   })
   .partial();
 export type UpdateSettingsInput = z.input<typeof updateSettingsSchema>;

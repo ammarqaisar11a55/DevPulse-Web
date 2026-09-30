@@ -274,7 +274,8 @@ async function seedUser(spec: DemoUserSpec, passwordHash: string) {
       passwordHash,
       isDemo: true,
       createdAt: localTime(DAYS_OF_HISTORY + 5, 600, spec.timezone),
-      settings: { create: { theme: 'SYSTEM', weekStartsOn: 1 } },
+      // Demo accounts opt in so the leaderboard has entries in development.
+      settings: { create: { theme: 'SYSTEM', weekStartsOn: 1, showOnLeaderboard: true } },
     },
   });
 

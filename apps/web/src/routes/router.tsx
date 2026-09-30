@@ -26,6 +26,10 @@ const appRoutes: RouteObject[] = [
     lazy: page(() => import('@/features/projects/ProjectDetailPage'), 'ProjectDetailPage'),
   },
   {
+    path: 'leaderboard',
+    lazy: page(() => import('@/features/leaderboard/LeaderboardPage'), 'LeaderboardPage'),
+  },
+  {
     path: 'settings',
     lazy: page(() => import('@/features/settings/SettingsLayout'), 'SettingsLayout'),
     children: [

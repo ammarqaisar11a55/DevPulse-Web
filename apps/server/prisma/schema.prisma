@@ -118,10 +118,13 @@ model UserSetting {
   trackBranchNames   Boolean         @default(true) @map("track_branch_names")
   trackRepositoryUrl Boolean         @default(true) @map("track_repository_url")
   emailNotifications Boolean         @default(true) @map("email_notifications")
+  /// Opt-in: list this user (name, username, avatar and coding time only) on the global leaderboard.
+  showOnLeaderboard  Boolean         @default(false) @map("show_on_leaderboard")
   updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([showOnLeaderboard])
   @@map("user_settings")
 }
 

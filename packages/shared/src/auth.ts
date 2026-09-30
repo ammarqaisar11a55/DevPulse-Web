@@ -101,6 +101,7 @@ export interface UserSettingsDto {
   trackBranchNames: boolean;
   trackRepositoryUrl: boolean;
   emailNotifications: boolean;
+  showOnLeaderboard: boolean;
 }
 
 export interface UserDto {

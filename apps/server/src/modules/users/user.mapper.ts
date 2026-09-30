@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS = {
   trackBranchNames: true,
   trackRepositoryUrl: true,
   emailNotifications: true,
+  showOnLeaderboard: false,
 } as const;
 
 export type UserWithSettings = User & { settings: UserSetting | null };
@@ -32,6 +33,7 @@ export function toUserDto(user: UserWithSettings): UserDto {
       trackBranchNames: settings.trackBranchNames,
       trackRepositoryUrl: settings.trackRepositoryUrl,
       emailNotifications: settings.emailNotifications,
+      showOnLeaderboard: settings.showOnLeaderboard,
     },
   };
 }

@@ -4,6 +4,7 @@ export * from './api';
 export * from './auth';
 export * from './common';
 export * from './constants';
+export * from './leaderboard';
 export * from './projects';
 export * from './time';
 export * from './users';

@@ -7,6 +7,7 @@ import {
   ListTree,
   Settings,
   Target,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const MAIN_NAV: NavItem[] = [
   { to: '/projects', label: 'Projects', icon: FolderGit2, primary: true },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, primary: true },
   { to: '/goals', label: 'Goals', icon: Target },
+  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { to: '/devices', label: 'Devices', icon: Laptop },
 ];
 
