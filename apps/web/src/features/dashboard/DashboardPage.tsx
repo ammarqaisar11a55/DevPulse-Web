@@ -12,6 +12,7 @@ import { Panel, PanelBody, PanelHeader } from '@/components/ui/Panel';
 import { Skeleton, SkeletonRows } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useCurrentUser } from '@/features/auth/auth-context';
+import { DashboardGoals } from '@/features/goals/components/DashboardGoals';
 import { LogSessionDialog } from '@/features/sessions/components/LogSessionDialog';
 import { ProjectLabel } from '@/features/sessions/components/SessionCells';
 import { sessionTitle } from '@/features/sessions/sessions-api';
@@ -108,6 +109,7 @@ export function DashboardPage() {
         <>
           <TodayPulse blocks={data?.todayBlocks} todaySeconds={data?.today.seconds} timeZone={tz} />
           <StatStrip loading={!data} stats={metrics(data)} className="mb-6" />
+          <DashboardGoals />
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Panel className="lg:col-span-2">

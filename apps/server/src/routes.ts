@@ -3,6 +3,7 @@ import { activityRouter } from './modules/activity/activity.routes';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
+import { goalsRouter } from './modules/goals/goals.routes';
 import { healthRouter } from './modules/health/health.routes';
 import { extensionActivityRouter } from './modules/integrations/extension.routes';
 import { integrationsRouter } from './modules/integrations/integrations.routes';
@@ -23,6 +24,7 @@ export function createApiRouter() {
   router.use('/activity', extensionActivityRouter);
   router.use('/integrations', integrationsRouter);
   router.use('/devices', devicesRouter);
+  router.use('/goals', goalsRouter);
   router.use('/analytics', analyticsRouter);
   router.use('/leaderboard', leaderboardRouter);
   return router;
