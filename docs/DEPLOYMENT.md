@@ -1,0 +1,162 @@
+# Deploying DevPulse
+
+DevPulse is two deployables:
+
+- **API** (`apps/server`): a Node.js process (Express) backed by PostgreSQL.
+- **Web app** (`apps/web`): static files produced by `vite build`.
+
+The recommended setup serves both from **one origin** through a reverse proxy: the web app at `/`
+and the API at `/api/`. The refresh-token cookie is then first-party and `SameSite=Strict`, and no
+CORS is involved for the browser.
+
+```text
+             https://devpulse.example.com
+                         │
+                   reverse proxy (TLS)
+              ┌──────────┴───────────┐
+          /api/*                     /*
+   Node API (port 4000)      apps/web/dist (static)
+              │
+         PostgreSQL
+```
+
+## Requirements
+
+- Node.js 20.19 or newer (22 LTS recommended)
+- PostgreSQL 14 or newer
+- A TLS-terminating reverse proxy (nginx, Caddy, a load balancer or a PaaS router)
+
+## 1. Configure the environment
+
+Create `apps/server/.env` (or set the variables in your platform) from
+[`apps/server/.env.example`](../apps/server/.env.example):
+
+| Variable                                                                            | Production value                                                                                           |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                                                                          | `production`                                                                                               |
+| `PORT`                                                                              | Port the API listens on, e.g. `4000`                                                                       |
+| `FRONTEND_URL`                                                                      | Public web origin, e.g. `https://devpulse.example.com` (used for CORS, CSRF origin checks and email links) |
+| `API_URL`                                                                           | Public API origin (the same origin when using one domain)                                                  |
+| `DATABASE_URL`                                                                      | PostgreSQL connection string                                                                               |
+| `JWT_SECRET`, `REFRESH_SECRET`, `PAIRING_SECRET`                                    | Three **different** random values of at least 32 characters: `openssl rand -base64 48`                     |
+| `COOKIE_SECURE`                                                                     | `true` (required in production; the API refuses to start otherwise)                                        |
+| `TRUST_PROXY`                                                                       | Number of proxies in front of the API, usually `1`, so client IPs and rate limits are correct              |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`, `EMAIL_FROM` | Mail server for password reset and security emails                                                         |
+| `LOG_LEVEL`                                                                         | `info` (logs are JSON on stdout)                                                                           |
+
+The API validates its configuration at startup and exits with a clear message if anything is
+missing or unsafe. Never commit `.env` files; only the `.env.example` files are tracked.
+
+The web app needs no runtime configuration when served on the same origin. For a different API
+origin, set `VITE_API_URL` (for example `https://api.devpulse.example.com/api/v1`) at build time
+and add the web origin to `FRONTEND_URL`.
+
+## 2. Build
+
+```bash
+npm ci
+npm run build
+```
+
+This produces `apps/server/dist/server.js` (a single bundle that includes the shared package) and
+the static web app in `apps/web/dist/`.
+
+## 3. Migrate the database
+
+Run pending migrations on every deploy, before starting the new API version:
+
+```bash
+npm run db:deploy
+```
+
+Migrations are forward-only SQL files in `apps/server/prisma/migrations`. Never run
+`db:migrate` (development only) or `db:seed` against production; the seed script refuses to run
+when `NODE_ENV=production` unless explicitly overridden.
+
+## 4. Run the API
+
+```bash
+NODE_ENV=production npm start
+```
+
+Run it under a process manager (systemd, a container orchestrator or your platform's runtime) that
+restarts it on failure. The API shuts down gracefully on `SIGTERM`, finishing in-flight requests
+for up to 10 seconds.
+
+Health checks:
+
+- Liveness: `GET /api/v1/health`
+- Readiness: `GET /api/v1/health/ready` (checks the database)
+
+## 5. Serve the web app and proxy the API
+
+Example nginx server block:
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name devpulse.example.com;
+
+  # ssl_certificate / ssl_certificate_key …
+
+  root /srv/devpulse/apps/web/dist;
+
+  location /api/ {
+    proxy_pass http://127.0.0.1:4000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 1m;
+  }
+
+  # Hashed build assets can be cached forever.
+  location /assets/ {
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    try_files $uri =404;
+  }
+
+  # Single-page app: unknown paths fall back to index.html, which must not be cached.
+  location / {
+    add_header Cache-Control "no-cache";
+    try_files $uri /index.html;
+  }
+}
+```
+
+The API already sends security headers (Helmet). If you add a Content-Security-Policy for the web
+app, allow the small inline theme script in `apps/web/index.html` by hash.
+
+## Scaling
+
+The API is stateless apart from two in-process components, which matter only when running more
+than one instance:
+
+- **Rate limiting** uses an in-memory store per instance. Plug a shared store (such as
+  `rate-limit-redis`) into `createRateLimiter` in `apps/server/src/middleware/rate-limit.ts`.
+- **Background jobs** (closing sessions whose editor stopped sending heartbeats) run on an
+  in-process timer in every instance. The job is idempotent, so duplicates are harmless, but it can
+  also move to a single worker or a scheduled job.
+
+Domain events (notifications) are delivered in-process after the triggering write. A durable queue
+can replace `apps/server/src/utils/domain-events.ts` without changing the emitters.
+
+Analytics query `coding_sessions` directly, backed by the `(user_id, started_at)` index. At larger
+volumes, add a pre-aggregated daily table refreshed by a job; the analytics repository is the only
+place that would change.
+
+## Backups and data
+
+- Back up PostgreSQL regularly (for example with `pg_dump` or your provider's snapshots).
+- Deleting an account cascades to all of its data.
+- Notifications older than 90 days are pruned automatically.
+
+## Checklist
+
+- [ ] `NODE_ENV=production`, `COOKIE_SECURE=true`, HTTPS everywhere
+- [ ] Three distinct, random secrets
+- [ ] `FRONTEND_URL` and `API_URL` set to the public origins
+- [ ] `TRUST_PROXY` matches your proxy setup
+- [ ] SMTP configured, so password reset emails are delivered
+- [ ] `npm run db:deploy` run before starting the new version
+- [ ] Health checks wired to `/api/v1/health/ready`
+- [ ] Database backups scheduled
