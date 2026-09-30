@@ -83,7 +83,7 @@ async function searchSessions(userId: string, pattern: string, page: Page) {
     type: 'sessions',
     title: row.title ?? (row.branch ? `Worked on ${row.branch}` : 'Coding session'),
     subtitle: row.project_name,
-    href: row.project_id ? `/projects/${row.project_id}` : '/activity',
+    href: row.project_id ? `/projects/${row.project_id}` : '/dashboard',
     color: row.color,
     date: row.started_at.toISOString(),
   }));

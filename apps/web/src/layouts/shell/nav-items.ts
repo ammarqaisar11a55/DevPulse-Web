@@ -1,10 +1,8 @@
 import {
-  Activity,
   BarChart3,
   FolderGit2,
   LayoutDashboard,
   Laptop,
-  ListTree,
   Settings,
   Target,
   Trophy,
@@ -21,11 +19,12 @@ export interface NavItem {
 
 export const MAIN_NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, primary: true },
-  { to: '/activity', label: 'Activity', icon: Activity, primary: true },
-  { to: '/sessions', label: 'Sessions', icon: ListTree },
+  // The Activity (/activity) and Sessions (/sessions) pages are not built yet. Add
+  // { to: '/activity', label: 'Activity', icon: Activity } and
+  // { to: '/sessions', label: 'Sessions', icon: ListTree } back once their routes exist.
   { to: '/projects', label: 'Projects', icon: FolderGit2, primary: true },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, primary: true },
-  { to: '/goals', label: 'Goals', icon: Target },
+  { to: '/goals', label: 'Goals', icon: Target, primary: true },
   { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { to: '/devices', label: 'Devices', icon: Laptop },
 ];
