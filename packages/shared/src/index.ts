@@ -9,5 +9,6 @@ export * from './integrations';
 export * from './leaderboard';
 export * from './notifications';
 export * from './projects';
+export * from './search';
 export * from './time';
 export * from './users';

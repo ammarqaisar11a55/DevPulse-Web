@@ -44,14 +44,11 @@ describe('notification producers', () => {
 
   it('notifies on password changes', async () => {
     const { auth, input } = await registerUser(app);
-    await request(app)
-      .post('/api/v1/users/me/password')
-      .set(auth)
-      .send({
-        currentPassword: input.password,
-        newPassword: 'another-pass-99',
-        confirmPassword: 'another-pass-99',
-      });
+    await request(app).post('/api/v1/users/me/password').set(auth).send({
+      currentPassword: input.password,
+      newPassword: 'another-pass-99',
+      confirmPassword: 'another-pass-99',
+    });
     const res = await request(app).get('/api/v1/notifications').set(auth);
     expect(res.body.data[0]).toMatchObject({
       type: 'SECURITY',

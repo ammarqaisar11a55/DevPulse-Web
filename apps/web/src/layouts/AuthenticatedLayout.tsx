@@ -1,5 +1,6 @@
 import { UserMenu } from '@/features/auth/UserMenu';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
+import { SearchCommand } from '@/features/search/SearchCommand';
 import { ThemeServerSync } from '@/features/settings/ThemeServerSync';
 import { AppShell } from './AppShell';
 
@@ -8,7 +9,11 @@ export function AuthenticatedLayout() {
   return (
     <>
       <ThemeServerSync />
-      <AppShell notifications={<NotificationBell />} userMenu={<UserMenu />} />
+      <AppShell
+        search={<SearchCommand />}
+        notifications={<NotificationBell />}
+        userMenu={<UserMenu />}
+      />
     </>
   );
 }

@@ -10,6 +10,7 @@ import { integrationsRouter } from './modules/integrations/integrations.routes';
 import { leaderboardRouter } from './modules/leaderboard/leaderboard.routes';
 import { notificationsRouter } from './modules/notifications/notifications.routes';
 import { projectsRouter } from './modules/projects/projects.routes';
+import { searchRouter } from './modules/search/search.routes';
 import { sessionsRouter } from './modules/sessions/sessions.routes';
 import { usersRouter } from './modules/users/users.routes';
 
@@ -29,5 +30,6 @@ export function createApiRouter() {
   router.use('/notifications', notificationsRouter);
   router.use('/analytics', analyticsRouter);
   router.use('/leaderboard', leaderboardRouter);
+  router.use('/search', searchRouter);
   return router;
 }
