@@ -27,15 +27,12 @@ describe('profile', () => {
 
   it('updates profile fields and validates the time zone', async () => {
     const { auth } = await registerUser(app);
-    const ok = await request(app)
-      .patch('/api/v1/users/me')
-      .set(auth)
-      .send({
-        fullName: 'Ada King',
-        bio: 'Analytical engines',
-        timezone: 'Asia/Karachi',
-        avatarUrl: '',
-      });
+    const ok = await request(app).patch('/api/v1/users/me').set(auth).send({
+      fullName: 'Ada King',
+      bio: 'Analytical engines',
+      timezone: 'Asia/Karachi',
+      avatarUrl: '',
+    });
     expect(ok.status).toBe(200);
     expect(ok.body.data).toMatchObject({
       fullName: 'Ada King',
@@ -130,14 +127,11 @@ describe('password change', () => {
       .send({ identifier: input.email, password: input.password });
     const otherAuth = { Authorization: `Bearer ${other.body.data.accessToken as string}` };
 
-    const res = await request(app)
-      .post('/api/v1/users/me/password')
-      .set(auth)
-      .send({
-        currentPassword: input.password,
-        newPassword: 'next-password-5',
-        confirmPassword: 'next-password-5',
-      });
+    const res = await request(app).post('/api/v1/users/me/password').set(auth).send({
+      currentPassword: input.password,
+      newPassword: 'next-password-5',
+      confirmPassword: 'next-password-5',
+    });
     expect(res.status).toBe(204);
 
     expect((await request(app).get('/api/v1/users/me').set(auth)).status).toBe(200);
@@ -153,14 +147,11 @@ describe('password change', () => {
 
   it('rejects an incorrect current password', async () => {
     const { auth } = await registerUser(app);
-    const res = await request(app)
-      .post('/api/v1/users/me/password')
-      .set(auth)
-      .send({
-        currentPassword: 'not-my-password-1',
-        newPassword: 'next-password-5',
-        confirmPassword: 'next-password-5',
-      });
+    const res = await request(app).post('/api/v1/users/me/password').set(auth).send({
+      currentPassword: 'not-my-password-1',
+      newPassword: 'next-password-5',
+      confirmPassword: 'next-password-5',
+    });
     expect(res.status).toBe(400);
   });
 });
