@@ -82,7 +82,7 @@ export const router = createBrowserRouter([
     // Shown while the first lazy route chunk loads; matches the page background to avoid a flash.
     hydrateFallbackElement: <div className="min-h-dvh bg-canvas" />,
     children: [
-      { index: true, lazy: page(() => import('@/pages/HomePage'), 'HomePage') },
+      { index: true, lazy: page(() => import('@/features/landing/LandingPage'), 'LandingPage') },
       {
         element: <GuestOnly />,
         children: [
