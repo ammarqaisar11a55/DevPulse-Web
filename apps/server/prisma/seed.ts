@@ -516,7 +516,7 @@ async function seedUser(spec: DemoUserSpec, passwordHash: string) {
         userId: user.id,
         metric: 'SESSIONS',
         period: 'MONTHLY',
-        target: 40,
+        target: 90,
         title: 'Monthly sessions',
       },
       ...(activeProjects[0]

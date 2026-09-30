@@ -6,6 +6,7 @@ import type {
   updateSettingsSchema,
 } from '@devpulse/shared';
 import type { z } from 'zod';
+import { emitDomainEvent } from '../../utils/domain-events';
 import { badRequest, conflict, notFound } from '../../utils/errors';
 import { sendMail } from '../../utils/mailer';
 import { hashPassword, verifyPassword } from '../../utils/password';
@@ -82,6 +83,7 @@ export const usersService = {
     const user = await requireUser(userId);
     await requirePassword(user.passwordHash, input.currentPassword, 'currentPassword');
     await usersRepository.changePassword(userId, await hashPassword(input.newPassword), sessionId);
+    await emitDomainEvent('security.password_changed', { userId });
   },
 
   async deleteAccount(userId: string, input: z.output<typeof deleteAccountSchema>) {

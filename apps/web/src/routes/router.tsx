@@ -28,6 +28,10 @@ const appRoutes: RouteObject[] = [
   { path: 'devices', lazy: page(() => import('@/features/devices/DevicesPage'), 'DevicesPage') },
   { path: 'goals', lazy: page(() => import('@/features/goals/GoalsPage'), 'GoalsPage') },
   {
+    path: 'notifications',
+    lazy: page(() => import('@/features/notifications/NotificationsPage'), 'NotificationsPage'),
+  },
+  {
     path: 'leaderboard',
     lazy: page(() => import('@/features/leaderboard/LeaderboardPage'), 'LeaderboardPage'),
   },

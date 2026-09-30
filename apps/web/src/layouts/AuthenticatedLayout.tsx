@@ -1,4 +1,5 @@
 import { UserMenu } from '@/features/auth/UserMenu';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { ThemeServerSync } from '@/features/settings/ThemeServerSync';
 import { AppShell } from './AppShell';
 
@@ -7,7 +8,7 @@ export function AuthenticatedLayout() {
   return (
     <>
       <ThemeServerSync />
-      <AppShell userMenu={<UserMenu />} />
+      <AppShell notifications={<NotificationBell />} userMenu={<UserMenu />} />
     </>
   );
 }

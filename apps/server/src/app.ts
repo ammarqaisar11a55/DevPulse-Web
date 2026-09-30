@@ -8,10 +8,12 @@ import { env } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { globalApiLimiter } from './middleware/rate-limit';
 import { requestId } from './middleware/request-id';
+import { registerNotificationHandlers } from './modules/notifications/notification-handlers';
 import { createApiRouter } from './routes';
 import { logger } from './utils/logger';
 
 export function createApp() {
+  registerNotificationHandlers();
   const app = express();
 
   app.disable('x-powered-by');

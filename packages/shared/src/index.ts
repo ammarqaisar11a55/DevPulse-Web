@@ -7,6 +7,7 @@ export * from './constants';
 export * from './goals';
 export * from './integrations';
 export * from './leaderboard';
+export * from './notifications';
 export * from './projects';
 export * from './time';
 export * from './users';

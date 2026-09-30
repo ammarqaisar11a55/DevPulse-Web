@@ -8,6 +8,7 @@ import type {
 } from '@devpulse/shared';
 import type { z } from 'zod';
 import { env } from '../../config/env';
+import { emitDomainEvent } from '../../utils/domain-events';
 import { badRequest, conflict, unauthorized } from '../../utils/errors';
 import { logger } from '../../utils/logger';
 import { sendMail } from '../../utils/mailer';
@@ -231,5 +232,6 @@ export const authService = {
       await hashPassword(input.password),
     );
     if (!done) throw invalid;
+    await emitDomainEvent('security.password_changed', { userId: record.userId });
   },
 };
