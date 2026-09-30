@@ -6,9 +6,11 @@ import { prisma } from './prisma';
 
 export interface SessionScope {
   userId: string;
+  /** A project id, or 'none' for sessions without a project. */
   projectId?: string;
   deviceId?: string;
   language?: string;
+  repository?: string;
 }
 
 /**
@@ -27,17 +29,13 @@ export function overlapRatio(from: Prisma.Sql, to: Prisma.Sql) {
   ) / GREATEST(EXTRACT(EPOCH FROM (${EFFECTIVE_END} - cs.started_at)), 1.0))`;
 }
 
-/** WHERE clause selecting a user's sessions that overlap [from, to), using the started_at index. */
-export function sessionsOverlapping(scope: SessionScope, from: Date, to: Date) {
-  const lowerBound = new Date(from.getTime() - MAX_SESSION_SECONDS * 1000);
-  const conditions = [
-    Prisma.sql`cs.user_id = ${scope.userId}::uuid`,
-    Prisma.sql`cs.started_at < ${to}`,
-    Prisma.sql`cs.started_at >= ${lowerBound}`,
-    Prisma.sql`${EFFECTIVE_END} > ${from}`,
-  ];
-  if (scope.projectId) conditions.push(Prisma.sql`cs.project_id = ${scope.projectId}::uuid`);
+/** Conditions restricting `cs` to the scope's user and optional filters. */
+export function scopeConditions(scope: SessionScope) {
+  const conditions = [Prisma.sql`cs.user_id = ${scope.userId}::uuid`];
+  if (scope.projectId === 'none') conditions.push(Prisma.sql`cs.project_id IS NULL`);
+  else if (scope.projectId) conditions.push(Prisma.sql`cs.project_id = ${scope.projectId}::uuid`);
   if (scope.deviceId) conditions.push(Prisma.sql`cs.device_id = ${scope.deviceId}::uuid`);
+  if (scope.repository) conditions.push(Prisma.sql`cs.repository = ${scope.repository}`);
   if (scope.language) {
     conditions.push(
       Prisma.sql`EXISTS (SELECT 1 FROM session_languages sl WHERE sl.session_id = cs.id AND sl.language = ${scope.language})`,
@@ -46,10 +44,25 @@ export function sessionsOverlapping(scope: SessionScope, from: Date, to: Date) {
   return Prisma.join(conditions, ' AND ');
 }
 
+/**
+ * Conditions selecting sessions that overlap [from, to). `from`/`to` may be SQL expressions
+ * (e.g. per-bucket boundaries); the lower bound on started_at keeps the index usable.
+ */
+export function overlapConditions(from: Prisma.Sql, to: Prisma.Sql) {
+  return Prisma.sql`cs.started_at < ${to}
+    AND cs.started_at >= ${from} - make_interval(secs => ${MAX_SESSION_SECONDS})
+    AND ${EFFECTIVE_END} > ${from}`;
+}
+
+/** WHERE clause selecting a user's sessions that overlap [from, to), using the started_at index. */
+export function sessionsOverlapping(scope: SessionScope, from: Date, to: Date) {
+  return Prisma.sql`${scopeConditions(scope)} AND ${overlapConditions(Prisma.sql`${from}::timestamptz`, Prisma.sql`${to}::timestamptz`)}`;
+}
+
 /** Active coding seconds within [from, to), with proportional attribution at the edges. */
 export async function activeSecondsInRange(scope: SessionScope, from: Date, to: Date) {
   const rows = await prisma.$queryRaw<{ seconds: number | null }[]>`
-    SELECT COALESCE(SUM(cs.active_seconds * ${overlapRatio(Prisma.sql`${from}`, Prisma.sql`${to}`)}), 0)::float8 AS seconds
+    SELECT COALESCE(SUM(cs.active_seconds * ${overlapRatio(Prisma.sql`${from}::timestamptz`, Prisma.sql`${to}::timestamptz`)}), 0)::float8 AS seconds
     FROM coding_sessions cs
     WHERE ${sessionsOverlapping(scope, from, to)}
   `;

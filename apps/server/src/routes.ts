@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { activityRouter } from './modules/activity/activity.routes';
+import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { healthRouter } from './modules/health/health.routes';
 import { projectsRouter } from './modules/projects/projects.routes';
@@ -15,5 +16,6 @@ export function createApiRouter() {
   router.use('/projects', projectsRouter);
   router.use('/sessions', sessionsRouter);
   router.use('/activity', activityRouter);
+  router.use('/analytics', analyticsRouter);
   return router;
 }

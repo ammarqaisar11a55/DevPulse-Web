@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { languageSchema, optionalQueryString, paginationQuerySchema } from './common';
 
-export const PROJECT_COLORS = ['blue', 'teal', 'amber', 'violet', 'magenta', 'slate'] as const;
+/** Keys map to the chart palette slots 1–6, in order. */
+export const PROJECT_COLORS = ['blue', 'teal', 'violet', 'amber', 'magenta', 'orange'] as const;
 export type ProjectColor = (typeof PROJECT_COLORS)[number];
 
 export const REPOSITORY_PROVIDERS = [

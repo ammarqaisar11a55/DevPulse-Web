@@ -1,6 +1,7 @@
 // DevPulse database schema.
 // Conventions: camelCase fields mapped to snake_case columns/tables, UUID primary keys,
 // `createdAt`/`updatedAt` timestamps, and user-owned rows cascade on user deletion.
+// All timestamps are timestamptz so SQL comparisons never depend on the server's TimeZone.
 
 generator client {
   provider = "prisma-client-js"
@@ -87,10 +88,10 @@ model User {
   timezone          String    @default("UTC")
   /// Marks development/demo accounts created by the seed script.
   isDemo            Boolean   @default(false) @map("is_demo")
-  passwordChangedAt DateTime? @map("password_changed_at")
-  lastLoginAt       DateTime? @map("last_login_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz(3)
+  lastLoginAt       DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   settings            UserSetting?
   authSessions        AuthSession[]
@@ -117,7 +118,7 @@ model UserSetting {
   trackBranchNames   Boolean         @default(true) @map("track_branch_names")
   trackRepositoryUrl Boolean         @default(true) @map("track_repository_url")
   emailNotifications Boolean         @default(true) @map("email_notifications")
-  updatedAt          DateTime        @updatedAt @map("updated_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -132,13 +133,13 @@ model AuthSession {
   /// Hash of the token that was rotated out, used for reuse detection and a short
   /// grace window for concurrent refreshes from multiple tabs.
   previousTokenHash String?   @unique @map("previous_token_hash")
-  rotatedAt         DateTime? @map("rotated_at")
+  rotatedAt         DateTime? @map("rotated_at") @db.Timestamptz(3)
   userAgent         String?   @map("user_agent")
   ipAddress         String?   @map("ip_address")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  lastUsedAt        DateTime  @default(now()) @map("last_used_at")
-  expiresAt         DateTime  @map("expires_at")
-  revokedAt         DateTime? @map("revoked_at")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt        DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(3)
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -150,9 +151,9 @@ model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @map("user_id") @db.Uuid
   tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at")
-  usedAt    DateTime? @map("used_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -171,12 +172,12 @@ model Project {
   repositoryUrl      String?             @map("repository_url")
   repositoryProvider RepositoryProvider? @map("repository_provider")
   primaryLanguage    String?             @map("primary_language")
-  /// Hex colour used to identify the project in charts.
+  /// Palette key (blue, teal, violet, amber, magenta, orange) identifying the project in charts.
   color              String?
-  lastActivityAt     DateTime?           @map("last_activity_at")
-  archivedAt         DateTime?           @map("archived_at")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
+  lastActivityAt     DateTime?           @map("last_activity_at") @db.Timestamptz(3)
+  archivedAt         DateTime?           @map("archived_at") @db.Timestamptz(3)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   codingSessions CodingSession[]
@@ -199,10 +200,10 @@ model PairingKey {
   keyHash    String    @unique @map("key_hash")
   /// Last four characters, safe to display in the key history.
   hint       String
-  expiresAt  DateTime  @map("expires_at")
-  consumedAt DateTime? @map("consumed_at")
-  revokedAt  DateTime? @map("revoked_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   device Device?
@@ -226,10 +227,10 @@ model Device {
   credentialHash   String    @unique @map("credential_hash")
   /// Non-secret prefix of the credential, shown to help users identify a device.
   credentialPrefix String    @map("credential_prefix")
-  lastSeenAt       DateTime? @map("last_seen_at")
-  revokedAt        DateTime? @map("revoked_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamptz(3)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   pairingKey     PairingKey?     @relation(fields: [pairingKeyId], references: [id], onDelete: SetNull)
@@ -252,9 +253,9 @@ model CodingSession {
   source          CodingSessionSource @default(MANUAL)
   status          CodingSessionStatus @default(ACTIVE)
   title           String?
-  startedAt       DateTime            @map("started_at")
-  endedAt         DateTime?           @map("ended_at")
-  lastHeartbeatAt DateTime?           @map("last_heartbeat_at")
+  startedAt       DateTime            @map("started_at") @db.Timestamptz(3)
+  endedAt         DateTime?           @map("ended_at") @db.Timestamptz(3)
+  lastHeartbeatAt DateTime?           @map("last_heartbeat_at") @db.Timestamptz(3)
   durationSeconds Int                 @default(0) @map("duration_seconds")
   activeSeconds   Int                 @default(0) @map("active_seconds")
   idleSeconds     Int                 @default(0) @map("idle_seconds")
@@ -266,8 +267,8 @@ model CodingSession {
   linesAdded      Int                 @default(0) @map("lines_added")
   linesRemoved    Int                 @default(0) @map("lines_removed")
   commits         Int                 @default(0)
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
@@ -305,11 +306,11 @@ model ActivityEvent {
   /// Idempotency key supplied by the client.
   clientEventId String?           @map("client_event_id")
   type          ActivityEventType
-  occurredAt    DateTime          @map("occurred_at")
+  occurredAt    DateTime          @map("occurred_at") @db.Timestamptz(3)
   language      String?
   /// Small, schema-validated metadata (e.g. file extension, commit count). No file contents.
   metadata      Json?
-  createdAt     DateTime          @default(now()) @map("created_at")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   device  Device?        @relation(fields: [deviceId], references: [id], onDelete: SetNull)
@@ -334,9 +335,9 @@ model Goal {
   /// Seconds for CODING_TIME goals, a count for SESSIONS goals.
   target     Int
   title      String?
-  archivedAt DateTime?  @map("archived_at")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  archivedAt DateTime?  @map("archived_at") @db.Timestamptz(3)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -355,8 +356,8 @@ model Notification {
   link      String?
   /// Prevents duplicate notifications for the same event (e.g. one goal completion per period).
   dedupeKey String?          @map("dedupe_key")
-  readAt    DateTime?        @map("read_at")
-  createdAt DateTime         @default(now()) @map("created_at")
+  readAt    DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

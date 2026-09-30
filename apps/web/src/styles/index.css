@@ -38,13 +38,19 @@
   --overlay: rgb(18 26 38 / 0.45);
   --shadow-float: 0 12px 32px -8px rgb(18 26 38 / 0.18), 0 2px 6px rgb(18 26 38 / 0.06);
 
-  /* Categorical chart palette, ordered for distinguishability. */
+  /*
+   * Categorical chart palette (blue, teal, violet, amber, magenta, orange), in fixed order.
+   * Validated with the dataviz palette checks against #ffffff: lightness band, chroma floor,
+   * adjacent CVD separation >= 13.7 and contrast >= 3:1. Re-run the validator when changing it.
+   */
   --chart-1: #2445d6;
-  --chart-2: #0f8b8d;
-  --chart-3: #c26a00;
-  --chart-4: #8a3ffc;
-  --chart-5: #d02670;
-  --chart-6: #5a6b82;
+  --chart-2: #0f9e7d;
+  --chart-3: #7b4ae0;
+  --chart-4: #c98500;
+  --chart-5: #d13f82;
+  --chart-6: #e0621f;
+  /* Neutral for series folded into "Other"; never a categorical slot. */
+  --chart-other: #9aa3b1;
   --chart-grid: #e6e9ef;
   --chart-axis: #7d8797;
 
@@ -87,12 +93,14 @@
   --overlay: rgb(4 7 12 / 0.65);
   --shadow-float: 0 16px 40px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.3);
 
-  --chart-1: #7c95ff;
-  --chart-2: #3cc4c1;
-  --chart-3: #f0a33c;
-  --chart-4: #b48cff;
-  --chart-5: #ff7eb6;
-  --chart-6: #8d9ab0;
+  /* Dark steps of the same hues, validated separately against #151c27. */
+  --chart-1: #5d7cf5;
+  --chart-2: #1aa382;
+  --chart-3: #8d6cea;
+  --chart-4: #bb8300;
+  --chart-5: #dc5594;
+  --chart-6: #e36c2c;
+  --chart-other: #5b6678;
   --chart-grid: #232d3d;
   --chart-axis: #748196;
 

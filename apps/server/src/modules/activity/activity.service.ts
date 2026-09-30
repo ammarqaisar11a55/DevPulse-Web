@@ -84,7 +84,7 @@ export const activityService = {
       }),
     ]);
     return {
-      projects: projects.map((project) => ({ ...project, color: project.color ?? 'slate' })),
+      projects: projects.map((project) => ({ ...project, color: project.color ?? 'blue' })),
       devices,
       languages: languages.map((row) => row.language),
       repositories: repositories.flatMap((row) => (row.repository ? [row.repository] : [])),

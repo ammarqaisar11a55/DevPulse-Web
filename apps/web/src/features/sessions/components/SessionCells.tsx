@@ -2,13 +2,12 @@ import type { CodingSessionDto } from '@devpulse/shared';
 import { ColorDot } from '@/components/ui/Badge';
 import { projectColor } from '@/lib/colors';
 import { formatDuration } from '@/lib/format';
-import type { ProjectColor } from '@devpulse/shared';
 
 export function ProjectLabel({ project }: { project: CodingSessionDto['project'] }) {
   if (!project) return <span className="text-ink-subtle">No project</span>;
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <ColorDot color={projectColor(project.color as ProjectColor)} />
+      <ColorDot color={projectColor(project.color)} />
       <span className="truncate">{project.name}</span>
     </span>
   );

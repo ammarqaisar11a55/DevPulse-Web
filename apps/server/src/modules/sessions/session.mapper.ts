@@ -32,7 +32,7 @@ export function toSessionDto(session: SessionWithRefs): CodingSessionDto {
     linesRemoved: session.linesRemoved,
     commits: session.commits,
     project: session.project
-      ? { ...session.project, color: session.project.color ?? 'slate' }
+      ? { ...session.project, color: session.project.color ?? 'blue' }
       : null,
     device: session.device,
     createdAt: session.createdAt.toISOString(),

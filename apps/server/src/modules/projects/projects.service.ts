@@ -43,7 +43,7 @@ function rowToDto(row: ProjectRow): ProjectDto {
     repositoryUrl: row.repository_url,
     repositoryProvider: row.repository_provider,
     primaryLanguage: row.primary_language,
-    color: isProjectColor(row.color) ? row.color : 'slate',
+    color: isProjectColor(row.color) ? row.color : 'blue',
     createdAt: row.created_at.toISOString(),
     lastActivityAt: row.last_activity_at?.toISOString() ?? null,
     archivedAt: row.archived_at?.toISOString() ?? null,

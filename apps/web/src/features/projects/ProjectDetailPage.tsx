@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
-import { ShareBar } from '@/components/ShareBar';
+import { BreakdownList } from '@/components/BreakdownList';
 import { StatStrip } from '@/components/StatStrip';
 import { Badge, ColorDot } from '@/components/ui/Badge';
 import { IconButton } from '@/components/ui/Button';
@@ -27,45 +27,13 @@ import { Panel, PanelBody, PanelHeader } from '@/components/ui/Panel';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { ApiError, getErrorMessage } from '@/lib/api-client';
-import { projectColor, seriesColor } from '@/lib/colors';
+import { projectColor } from '@/lib/colors';
 import { formatDate, formatDuration, formatRelative } from '@/lib/format';
 import { languageName } from '@/lib/languages';
+import { foldSeries } from '@/lib/series';
 import { ProjectFormDialog } from './components/ProjectFormDialog';
 import { providerLabel } from './provider-label';
 import { projectKeys, projectsApi } from './projects-api';
-
-function BreakdownList({
-  items,
-  empty,
-}: {
-  items: { key: string; label: string; seconds: number; color: string }[];
-  empty: string;
-}) {
-  if (items.length === 0) return <p className="text-sm text-ink-muted">{empty}</p>;
-  const total = items.reduce((sum, item) => sum + item.seconds, 0);
-  const max = Math.max(...items.map((item) => item.seconds));
-  return (
-    <ul className="flex flex-col gap-3.5">
-      {items.map((item) => (
-        <li key={item.key}>
-          <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
-            <span className="flex min-w-0 items-center gap-2">
-              <ColorDot color={item.color} />
-              <span className="truncate">{item.label}</span>
-            </span>
-            <span className="tabular shrink-0 text-ink-muted">
-              {formatDuration(item.seconds)}
-              <span className="ml-2 inline-block w-9 text-right text-ink-subtle">
-                {total > 0 ? Math.round((item.seconds / total) * 100) : 0}%
-              </span>
-            </span>
-          </div>
-          <ShareBar ratio={max > 0 ? item.seconds / max : 0} color={item.color} />
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function ProjectDetailPage() {
   const { projectId = '' } = useParams();
@@ -196,11 +164,10 @@ export function ProjectDetailPage() {
             {data ? (
               <BreakdownList
                 empty="Language data appears once sessions are recorded for this project."
-                items={data.languages.map((item, index) => ({
+                items={foldSeries(data.languages, (item) => ({
                   key: item.language,
                   label: languageName(item.language),
                   seconds: item.seconds,
-                  color: seriesColor(index),
                 }))}
               />
             ) : (
@@ -259,11 +226,10 @@ export function ProjectDetailPage() {
               {data ? (
                 <BreakdownList
                   empty="No editor has recorded time for this project yet."
-                  items={data.devices.map((device, index) => ({
+                  items={foldSeries(data.devices, (device) => ({
                     key: device.id,
                     label: device.name,
                     seconds: device.seconds,
-                    color: seriesColor(index + 2),
                   }))}
                 />
               ) : (

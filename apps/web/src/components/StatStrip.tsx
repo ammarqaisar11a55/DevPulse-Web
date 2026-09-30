@@ -13,7 +13,10 @@ export interface Stat {
 }
 
 function Trend({ change, label }: { change: number; label?: string }) {
-  const up = change >= 0;
+  if (Math.round(change * 100) === 0) {
+    return <p className="mt-1.5 text-xs text-ink-muted">About the same {label}</p>;
+  }
+  const up = change > 0;
   const Icon = up ? TrendingUp : TrendingDown;
   const percent = `${up ? '+' : ''}${Math.round(change * 100)}%`;
   return (
