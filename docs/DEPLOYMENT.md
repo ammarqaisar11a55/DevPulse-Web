@@ -65,6 +65,12 @@ For Supabase, use the **Session pooler** connection string (project → Connect 
 with `?sslmode=require`. The direct `db.<project>.supabase.co` host only has an IPv6 address and
 is unreachable from most servers.
 
+Every table has row level security enabled with no policies (migration
+`enable_row_level_security`). The API connects as the tables' owner, which bypasses RLS, while
+other roles, such as the `anon` and `authenticated` keys of Supabase's Data API, see no rows.
+DevPulse does not use the Data API, so you can also turn it off in the Supabase dashboard. Tables
+added in future migrations must enable RLS the same way.
+
 ## 2. Build
 
 ```bash
