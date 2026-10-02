@@ -6,8 +6,8 @@ const COLUMNS = [
   {
     title: 'Product',
     links: [
-      { label: 'Features', href: '#features' },
-      { label: 'How it works', href: '#how-it-works' },
+      { label: 'Features', href: '/#features' },
+      { label: 'How it works', href: '/#how-it-works' },
       { label: 'Get started', to: '/register' },
     ],
   },
@@ -22,7 +22,8 @@ const COLUMNS = [
   {
     title: 'Company',
     links: [
-      { label: 'Privacy', href: '#privacy' },
+      { label: 'Privacy', href: '/#privacy' },
+      { label: 'Terms', to: '/terms' },
       { label: 'Contact', href: ISSUES_URL, external: true },
     ],
   },

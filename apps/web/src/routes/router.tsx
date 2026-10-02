@@ -95,6 +95,7 @@ export const router = createBrowserRouter([
     hydrateFallbackElement: <div className="min-h-dvh bg-canvas" />,
     children: [
       { index: true, lazy: page(() => import('@/features/landing/LandingPage'), 'LandingPage') },
+      { path: 'terms', lazy: page(() => import('@/features/landing/TermsPage'), 'TermsPage') },
       {
         element: <GuestOnly />,
         children: [

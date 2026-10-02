@@ -85,7 +85,11 @@ export function RegisterPage() {
         </Button>
         <p className="text-xs text-ink-subtle">
           DevPulse stores coding metadata such as durations, languages and project names. It never
-          uploads your source code.
+          uploads your source code. By creating an account you agree to the{' '}
+          <Link to="/terms" className="underline hover:text-ink">
+            terms of service
+          </Link>
+          .
         </p>
       </form>
     </AuthLayout>
