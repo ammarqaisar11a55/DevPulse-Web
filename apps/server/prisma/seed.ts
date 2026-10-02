@@ -254,6 +254,66 @@ const DEMO_USERS: DemoUserSpec[] = [
   },
 ];
 
+/**
+ * Extra opted-in accounts with a few weeks of manually logged time and nothing else, so the
+ * leaderboard shows a realistic field in development. Removed with the other demo accounts.
+ */
+const LEADERBOARD_PARTICIPANTS: { name: string; username: string; activity: number }[] = [
+  { name: 'Priya Raman', username: 'priya', activity: 0.95 },
+  { name: 'Mateo Alvarez', username: 'mateo', activity: 0.85 },
+  { name: 'Aiko Tanaka', username: 'aiko', activity: 0.8 },
+  { name: 'Noah Fischer', username: 'noah', activity: 0.7 },
+  { name: 'Zara Okafor', username: 'zara', activity: 0.6 },
+  { name: "Liam O'Connor", username: 'liam', activity: 0.5 },
+  { name: 'Hana Kim', username: 'hana', activity: 0.45 },
+  { name: 'Omar Haddad', username: 'omar', activity: 0.35 },
+  { name: 'Elena Petrova', username: 'elena', activity: 0.25 },
+  { name: 'Lucas Martin', username: 'lucas', activity: 0.15 },
+];
+const PARTICIPANT_DAYS = 35;
+
+async function seedLeaderboardParticipants(passwordHash: string) {
+  for (const participant of LEADERBOARD_PARTICIPANTS) {
+    const user = await prisma.user.create({
+      data: {
+        email: `${participant.username}@devpulse.dev`,
+        username: participant.username,
+        fullName: participant.name,
+        passwordHash,
+        isDemo: true,
+        createdAt: localTime(PARTICIPANT_DAYS + 5, 600, 'UTC'),
+        settings: { create: { showOnLeaderboard: true } },
+      },
+    });
+    const sessions: Prisma.CodingSessionCreateManyInput[] = [];
+    // Today is included so the daily board has entries too.
+    for (let daysAgo = PARTICIPANT_DAYS; daysAgo >= 0; daysAgo -= 1) {
+      if (random() > participant.activity) continue;
+      const activeMinutes = 30 + Math.floor(random() * 150 * participant.activity + 30);
+      const idleMinutes = Math.floor(random() * 20);
+      const durationSeconds = (activeMinutes + idleMinutes) * 60;
+      // Today's session must already have ended.
+      const startMinute = daysAgo === 0 ? 30 : 480 + Math.floor(random() * 600);
+      const startedAt = localTime(daysAgo, startMinute, 'UTC');
+      const endedAt = new Date(startedAt.getTime() + durationSeconds * 1000);
+      if (endedAt > new Date()) continue;
+      sessions.push({
+        userId: user.id,
+        source: 'MANUAL',
+        status: 'ENDED',
+        startedAt,
+        endedAt,
+        durationSeconds,
+        activeSeconds: activeMinutes * 60,
+        idleSeconds: idleMinutes * 60,
+        language: pick(['typescript', 'python', 'go', 'rust', 'java']),
+      });
+    }
+    await prisma.codingSession.createMany({ data: sessions });
+  }
+  return LEADERBOARD_PARTICIPANTS.length;
+}
+
 /** Stand-in credential hash; demo devices cannot actually authenticate. */
 function fakeCredential() {
   const token = `dpd_${randomBytes(24).toString('base64url')}`;
@@ -592,6 +652,8 @@ async function main() {
     const summary = await seedUser(spec, passwordHash);
     console.log(`Seeded ${summary.user}: ${summary.sessions} sessions, ${summary.events} events.`);
   }
+  const participants = await seedLeaderboardParticipants(passwordHash);
+  console.log(`Seeded ${participants} leaderboard participants.`);
   console.log(`\nDemo sign-in: demo@devpulse.dev (or "demo") / ${DEMO_PASSWORD}`);
 }
 
