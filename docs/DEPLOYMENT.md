@@ -28,8 +28,18 @@ CORS is involved for the browser.
 
 ## 1. Configure the environment
 
-Create `apps/server/.env` (or set the variables in your platform) from
-[`apps/server/.env.example`](../apps/server/.env.example):
+All configuration for both the web app and the API lives in **one file** at the repository
+root, created from [`.env.production.example`](../.env.production.example):
+
+```bash
+cp .env.production.example .env.production
+```
+
+`.env.production` is git-ignored. Its frontend section (`VITE_*` variables) is read by the web
+build; only `VITE_*` variables are copied into the browser bundle, so the API secrets in the same
+file never reach the client. `npm start` and `npm run db:deploy:prod` read the backend section.
+Variables set by your hosting platform take precedence over the file, so on a PaaS you can paste
+the same values into its settings instead. The backend variables are:
 
 | Variable                                                                            | Production value                                                                                           |
 | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -47,9 +57,13 @@ Create `apps/server/.env` (or set the variables in your platform) from
 The API validates its configuration at startup and exits with a clear message if anything is
 missing or unsafe. Never commit `.env` files; only the `.env.example` files are tracked.
 
-The web app needs no runtime configuration when served on the same origin. For a different API
-origin, set `VITE_API_URL` (for example `https://api.devpulse.example.com/api/v1`) at build time
-and add the web origin to `FRONTEND_URL`.
+The web app has one variable, `VITE_API_URL`, read at build time: keep `/api/v1` when the API is
+served on the same origin. For a separate API origin, set it to that origin (for example
+`https://api.devpulse.example.com/api/v1`) and set `FRONTEND_URL` to the web origin.
+
+For Supabase, use the **Session pooler** connection string (project → Connect → Session pooler)
+with `?sslmode=require`. The direct `db.<project>.supabase.co` host only has an IPv6 address and
+is unreachable from most servers.
 
 ## 2. Build
 
@@ -66,8 +80,12 @@ the static web app in `apps/web/dist/`.
 Run pending migrations on every deploy, before starting the new API version:
 
 ```bash
-npm run db:deploy
+npm run db:deploy:prod
 ```
+
+This reads `DATABASE_URL` from `.env.production` and fails if the file is missing, so it can
+never fall back to a development database. When the variables come from your platform instead,
+run `npm run db:deploy`.
 
 Migrations are forward-only SQL files in `apps/server/prisma/migrations`. Never run
 `db:migrate` (development only) or `db:seed` against production; the seed script refuses to run
@@ -76,8 +94,10 @@ when `NODE_ENV=production` unless explicitly overridden.
 ## 4. Run the API
 
 ```bash
-NODE_ENV=production npm start
+npm start
 ```
+
+It loads `.env.production` (which sets `NODE_ENV=production`).
 
 Run it under a process manager (systemd, a container orchestrator or your platform's runtime) that
 restarts it on failure. The API shuts down gracefully on `SIGTERM`, finishing in-flight requests

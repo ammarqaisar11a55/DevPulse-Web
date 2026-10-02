@@ -24,6 +24,7 @@
     "format:check": "prettier --check .",
     "db:migrate": "npm run db:migrate -w @devpulse/server",
     "db:deploy": "npm run db:deploy -w @devpulse/server",
+    "db:deploy:prod": "npm run db:deploy:prod -w @devpulse/server",
     "db:seed": "npm run db:seed -w @devpulse/server",
     "db:reset": "npm run db:reset -w @devpulse/server",
     "db:studio": "npm run db:studio -w @devpulse/server"
