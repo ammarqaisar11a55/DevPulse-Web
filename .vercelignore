@@ -1,0 +1,10 @@
+# Never upload local environment files when deploying from the CLI; Vercel's own
+# environment variables are used instead. The tracked templates are harmless.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.production.example
+!**/.env.example
+!**/.env.test.example
+node_modules
