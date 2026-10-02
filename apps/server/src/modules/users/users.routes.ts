@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   changePasswordSchema,
+  confirmEmailChangeSchema,
   deleteAccountSchema,
   updateIdentitySchema,
   updateProfileSchema,
@@ -14,7 +15,18 @@ import { usersController } from './users.controller';
 /** Endpoints that verify the current password are throttled against guessing. */
 const passwordCheckLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, limit: 10 });
 
+/** Confirmation tokens are long and random; this only bounds abuse of a public endpoint. */
+const confirmEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, limit: 20 });
+
 export const usersRouter = Router();
+
+// Public: opened from the link emailed to the new address, possibly while signed out.
+usersRouter.post(
+  '/email-change/confirm',
+  confirmEmailLimiter,
+  validate('body', confirmEmailChangeSchema),
+  usersController.confirmEmailChange,
+);
 
 usersRouter.use(requireUser);
 usersRouter.get('/me', usersController.getMe);
@@ -25,6 +37,8 @@ usersRouter.patch(
   validate('body', updateIdentitySchema),
   usersController.updateIdentity,
 );
+usersRouter.get('/me/email-change', usersController.getPendingEmailChange);
+usersRouter.delete('/me/email-change', usersController.cancelEmailChange);
 usersRouter.patch(
   '/me/settings',
   validate('body', updateSettingsSchema),

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { updateProfileSchema, type UpdateProfileInput } from '@devpulse/shared';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { Panel, PanelBody, PanelHeader } from '@/components/ui/Panel';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
-import { formatDate } from '@/lib/format';
+import { getErrorMessage } from '@/lib/api-client';
+import { formatDate, formatRelative } from '@/lib/format';
 import { applyServerErrors } from '@/lib/form-errors';
 import { DeleteAccountPanel } from '../components/DeleteAccountPanel';
 import { IdentityDialog } from '../components/IdentityDialog';
-import { settingsApi } from '../settings-api';
+import { emailChangeKey, settingsApi } from '../settings-api';
 import { browserTimeZone, listTimeZones } from '../timezones';
 
 const FIELDS = ['fullName', 'bio', 'timezone', 'avatarUrl'] as const;
@@ -125,6 +126,40 @@ function ProfileForm() {
   );
 }
 
+/** Shown under the email while a new address waits for its confirmation link to be opened. */
+function PendingEmailNotice() {
+  const queryClient = useQueryClient();
+  const pending = useQuery({
+    queryKey: emailChangeKey,
+    queryFn: ({ signal }) => settingsApi.pendingEmailChange(signal),
+  });
+  const cancel = useMutation({
+    mutationFn: settingsApi.cancelEmailChange,
+    onSuccess: () => {
+      queryClient.setQueryData(emailChangeKey, null);
+      toast.success('Email change cancelled');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  if (!pending.data) return null;
+  return (
+    <div
+      role="status"
+      className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-control bg-amber-soft px-3.5 py-3 text-sm"
+    >
+      <p className="min-w-0">
+        Waiting for you to confirm <span className="font-medium">{pending.data.newEmail}</span>.
+        Open the link we sent there; it expires{' '}
+        {formatRelative(pending.data.expiresAt).toLowerCase()}.
+      </p>
+      <Button variant="ghost" size="sm" loading={cancel.isPending} onClick={() => cancel.mutate()}>
+        Cancel change
+      </Button>
+    </div>
+  );
+}
+
 function AccountPanel() {
   const user = useCurrentUser();
   const [dialog, setDialog] = useState<'username' | 'email' | null>(null);
@@ -158,6 +193,7 @@ function AccountPanel() {
             <dd className="font-medium">{formatDate(user.createdAt, { dateStyle: 'long' })}</dd>
           </div>
         </dl>
+        <PendingEmailNotice />
       </PanelBody>
       {dialog && (
         <IdentityDialog field={dialog} open onOpenChange={(open) => !open && setDialog(null)} />

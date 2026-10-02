@@ -171,16 +171,27 @@ signs out every session. Errors: `400` for an invalid, used or expired token.
 
 ### Users
 
-| Method | Path                 | Auth | Description                                                                                                                                                                                |
-| ------ | -------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/users/me`          | user | The signed-in user with settings                                                                                                                                                           |
-| PATCH  | `/users/me`          | user | Update `fullName`, `bio` (≤280), `timezone` (IANA name), `avatarUrl` (https only)                                                                                                          |
-| PATCH  | `/users/me/identity` | user | Change `username` and/or `email`; requires `currentPassword`. The old address is notified of an email change                                                                               |
-| PATCH  | `/users/me/settings` | user | Update any of `theme` (`LIGHT`/`DARK`/`SYSTEM`), `weekStartsOn` (0 or 1), `idleTimeoutMinutes` (1–60), `trackBranchNames`, `trackRepositoryUrl`, `emailNotifications`, `showOnLeaderboard` |
-| POST   | `/users/me/password` | user | `currentPassword`, `newPassword`, `confirmPassword`; other sessions are signed out. `204`                                                                                                  |
-| DELETE | `/users/me`          | user | `password` and `confirmation: "DELETE"`; deletes the account and all its data. `204`                                                                                                       |
+| Method | Path                          | Auth | Description                                                                                                                                                                                |
+| ------ | ----------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/users/me`                   | user | The signed-in user with settings                                                                                                                                                           |
+| PATCH  | `/users/me`                   | user | Update `fullName`, `bio` (≤280), `timezone` (IANA name), `avatarUrl` (https only)                                                                                                          |
+| PATCH  | `/users/me/identity`          | user | Change `username` and/or `email`; requires `currentPassword`. A username changes immediately; an email change is held until confirmed (below)                                              |
+| GET    | `/users/me/email-change`      | user | The pending email change, `{ newEmail, expiresAt }`, or `null`                                                                                                                             |
+| DELETE | `/users/me/email-change`      | user | Cancel a pending email change. `204`                                                                                                                                                       |
+| POST   | `/users/email-change/confirm` | none | `{ token }` from the emailed link. Switches the sign-in email and returns `{ email }`                                                                                                      |
+| PATCH  | `/users/me/settings`          | user | Update any of `theme` (`LIGHT`/`DARK`/`SYSTEM`), `weekStartsOn` (0 or 1), `idleTimeoutMinutes` (1–60), `trackBranchNames`, `trackRepositoryUrl`, `emailNotifications`, `showOnLeaderboard` |
+| POST   | `/users/me/password`          | user | `currentPassword`, `newPassword`, `confirmPassword`; other sessions are signed out. `204`                                                                                                  |
+| DELETE | `/users/me`                   | user | `password` and `confirmation: "DELETE"`; deletes the account and all its data. `204`                                                                                                       |
 
 Fields not listed are ignored (for example `email` on `PATCH /users/me`).
+
+**Changing email.** A new address must be proven before it can sign in or receive password resets.
+`PATCH /users/me/identity` with `email` stores a pending request (replacing any earlier one) and
+emails a single-use link, `FRONTEND_URL/verify-email?token=…`, to the new address. The response
+still shows the current email. The link is valid for 24 hours; only a SHA-256 hash of the token is
+stored. Confirming does not require being signed in. It changes the email, notifies the previous
+address and creates a security notification. Errors: `400` for an invalid, used, replaced or
+expired token; `409` if another account took the address in the meantime.
 
 ### Projects
 

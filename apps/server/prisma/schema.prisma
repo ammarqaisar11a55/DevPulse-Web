@@ -96,6 +96,7 @@ model User {
   settings            UserSetting?
   authSessions        AuthSession[]
   passwordResetTokens PasswordResetToken[]
+  emailChangeRequests EmailChangeRequest[]
   projects            Project[]
   codingSessions      CodingSession[]
   activityEvents      ActivityEvent[]
@@ -162,6 +163,24 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+/// A pending change of sign-in email. The address only changes once the link sent to it is
+/// opened, proving the user controls it. Only a hash of the token is stored.
+model EmailChangeRequest {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  /// Stored lower-cased, like User.email.
+  newEmail  String    @map("new_email")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_change_requests")
 }
 
 // ─── Projects ────────────────────────────────────────────────────────────────

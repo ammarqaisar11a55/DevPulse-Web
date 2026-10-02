@@ -49,6 +49,15 @@ export function registerNotificationHandlers() {
     });
   });
 
+  onDomainEvent('security.email_changed', async ({ userId, newEmail }) => {
+    await notificationsService.create(userId, {
+      type: 'SECURITY',
+      title: 'Your email address was changed',
+      body: `You now sign in with ${newEmail}. If you did not do this, reset your password immediately.`,
+      link: '/settings/profile',
+    });
+  });
+
   // When a session is recorded, check the user's goals and notify once per goal per period.
   onDomainEvent('session.recorded', async ({ userId, projectId }) => {
     const goals = await prisma.goal.findMany({

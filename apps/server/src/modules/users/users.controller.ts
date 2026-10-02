@@ -17,6 +17,19 @@ export const usersController = {
     res.json({ data: await usersService.updateIdentity(currentUserId(req), valid(req, 'body')) });
   }) satisfies RequestHandler,
 
+  getPendingEmailChange: (async (req, res) => {
+    res.json({ data: await usersService.getPendingEmailChange(currentUserId(req)) });
+  }) satisfies RequestHandler,
+
+  cancelEmailChange: (async (req, res) => {
+    await usersService.cancelEmailChange(currentUserId(req));
+    res.status(204).end();
+  }) satisfies RequestHandler,
+
+  confirmEmailChange: (async (req, res) => {
+    res.json({ data: await usersService.confirmEmailChange(valid(req, 'body')) });
+  }) satisfies RequestHandler,
+
   updateSettings: (async (req, res) => {
     res.json({ data: await usersService.updateSettings(currentUserId(req), valid(req, 'body')) });
   }) satisfies RequestHandler,

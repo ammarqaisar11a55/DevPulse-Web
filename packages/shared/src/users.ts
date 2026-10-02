@@ -57,6 +57,21 @@ export const updateIdentitySchema = z
   });
 export type UpdateIdentityInput = z.input<typeof updateIdentitySchema>;
 
+/** Hours a link to confirm a new email address stays valid. */
+export const EMAIL_CHANGE_TTL_HOURS = 24;
+
+/** Opened from the link emailed to the new address. */
+export const confirmEmailChangeSchema = z.object({
+  token: z.string().min(20, 'This confirmation link is invalid').max(200),
+});
+export type ConfirmEmailChangeInput = z.input<typeof confirmEmailChangeSchema>;
+
+/** A requested email change that is waiting for the new address to be confirmed. */
+export interface PendingEmailChangeDto {
+  newEmail: string;
+  expiresAt: string;
+}
+
 export const updateSettingsSchema = z
   .object({
     theme: z.enum(['LIGHT', 'DARK', 'SYSTEM']),

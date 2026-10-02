@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailSchema, usernameSchema } from '@devpulse/shared';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ import { Alert } from '@/components/ui/Alert';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-context';
 import { PasswordInput } from '@/features/auth/PasswordInput';
 import { applyServerErrors } from '@/lib/form-errors';
-import { settingsApi } from '../settings-api';
+import { emailChangeKey, settingsApi } from '../settings-api';
 
 const schemas = {
   username: z.object({
@@ -33,6 +33,7 @@ interface IdentityDialogProps {
 export function IdentityDialog({ field, open, onOpenChange }: IdentityDialogProps) {
   const user = useCurrentUser();
   const { setUser } = useAuth();
+  const queryClient = useQueryClient();
   const form = useForm<{ value: string; currentPassword: string }>({
     resolver: zodResolver(schemas[field]),
     defaultValues: { value: field === 'email' ? user.email : user.username, currentPassword: '' },
@@ -45,9 +46,14 @@ export function IdentityDialog({ field, open, onOpenChange }: IdentityDialogProp
         [field]: values.value,
         currentPassword: values.currentPassword,
       }),
-    onSuccess: (updated) => {
+    onSuccess: (updated, values) => {
       setUser(updated);
-      toast.success(field === 'email' ? 'Email changed' : 'Username changed');
+      if (field === 'email') {
+        void queryClient.invalidateQueries({ queryKey: emailChangeKey });
+        toast.success(`Check ${values.value.trim().toLowerCase()} for a confirmation link`);
+      } else {
+        toast.success('Username changed');
+      }
       onOpenChange(false);
     },
     onError: (error) => {
@@ -67,13 +73,22 @@ export function IdentityDialog({ field, open, onOpenChange }: IdentityDialogProp
         title={field === 'email' ? 'Change email' : 'Change username'}
         description={
           field === 'email'
-            ? 'You will sign in with the new address. We will let your current address know about the change.'
+            ? 'We will email a confirmation link to the new address. You keep signing in with your current address until you open it.'
             : 'Your username is used to sign in and appears on your profile.'
         }
       >
         <form
           id="identity-form"
-          onSubmit={form.handleSubmit((values) => save.mutate(values))}
+          onSubmit={form.handleSubmit((values) => {
+            const current = field === 'email' ? user.email : user.username;
+            if (values.value.trim().toLowerCase() === current) {
+              form.setError('value', {
+                message: `Enter a different ${field === 'email' ? 'email address' : 'username'}`,
+              });
+              return;
+            }
+            save.mutate(values);
+          })}
           noValidate
           className="grid gap-4"
         >
@@ -95,7 +110,7 @@ export function IdentityDialog({ field, open, onOpenChange }: IdentityDialogProp
             <Button variant="secondary">Cancel</Button>
           </DialogClose>
           <Button type="submit" form="identity-form" loading={save.isPending}>
-            {field === 'email' ? 'Change email' : 'Change username'}
+            {field === 'email' ? 'Send confirmation link' : 'Change username'}
           </Button>
         </div>
       </DialogContent>

@@ -117,6 +117,10 @@ export const router = createBrowserRouter([
         lazy: page(() => import('@/features/auth/pages/ResetPasswordPage'), 'ResetPasswordPage'),
       },
       {
+        path: 'verify-email',
+        lazy: page(() => import('@/features/auth/pages/VerifyEmailPage'), 'VerifyEmailPage'),
+      },
+      {
         element: <RequireAuth />,
         children: [
           {

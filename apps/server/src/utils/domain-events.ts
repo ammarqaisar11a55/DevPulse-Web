@@ -17,6 +17,7 @@ export interface DomainEvents {
   'device.connected': { userId: string; deviceId: string; name: string };
   'device.revoked': { userId: string; deviceId: string; name: string };
   'security.password_changed': { userId: string };
+  'security.email_changed': { userId: string; newEmail: string };
 }
 
 type Handler<K extends keyof DomainEvents> = (payload: DomainEvents[K]) => Promise<void> | void;
