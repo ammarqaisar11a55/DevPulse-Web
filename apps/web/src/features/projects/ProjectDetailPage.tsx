@@ -32,6 +32,7 @@ import { formatDate, formatDuration, formatRelative } from '@/lib/format';
 import { languageName } from '@/lib/languages';
 import { foldSeries } from '@/lib/series';
 import { ProjectFormDialog } from './components/ProjectFormDialog';
+import { ProjectHistory } from './components/ProjectHistory';
 import { providerLabel } from './provider-label';
 import { projectKeys, projectsApi } from './projects-api';
 
@@ -147,7 +148,11 @@ export function ProjectDetailPage() {
         loading={!data}
         className="mb-6"
         stats={[
-          { label: 'Total coding time', value: formatDuration(data?.totalSeconds ?? 0) },
+          {
+            label: 'Total coding time',
+            value: formatDuration(data?.totalSeconds ?? 0),
+            hint: 'All time',
+          },
           { label: 'This week', value: formatDuration(data?.weekSeconds ?? 0) },
           { label: 'Sessions', value: (data?.sessionCount ?? 0).toLocaleString() },
           {
@@ -157,7 +162,10 @@ export function ProjectDetailPage() {
         ]}
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <ProjectHistory projectId={projectId} />
+
+      {/* grid-cols-1 caps the column at the viewport, so long repository URLs truncate. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Panel className="lg:col-span-2">
           <PanelHeader title="Languages" description="Active coding time by language." />
           <PanelBody>

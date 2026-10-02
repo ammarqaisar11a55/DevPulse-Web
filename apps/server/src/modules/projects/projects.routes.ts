@@ -15,6 +15,7 @@ projectsRouter.use(requireUser);
 projectsRouter.get('/', validate('query', listProjectsQuerySchema), projectsController.list);
 projectsRouter.post('/', validate('body', createProjectSchema), projectsController.create);
 projectsRouter.get('/:id', validate('params', idParamsSchema), projectsController.get);
+projectsRouter.get('/:id/history', validate('params', idParamsSchema), projectsController.history);
 projectsRouter.patch(
   '/:id',
   validate('params', idParamsSchema),

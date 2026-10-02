@@ -8,6 +8,8 @@ import {
   type ExtensionSummaryDto,
   type Granularity,
   type OverviewDto,
+  PROJECT_HISTORY_RECENT_DAYS,
+  type ProjectHistoryDto,
   type SeriesPoint,
   type SessionLengthBucket,
 } from '@devpulse/shared';
@@ -31,6 +33,10 @@ import { getUserCalendar } from '../users/user-context';
 import { analyticsRepository } from './analytics.repository';
 
 const TOP_ITEMS = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const addDaysToInstant = (instant: Date, days: number) =>
+  new Date(instant.getTime() + days * DAY_MS);
 const STREAK_LOOKBACK_DAYS = 400;
 
 /** Consecutive active days ending today, or ending yesterday if today has no activity yet. */
@@ -116,6 +122,26 @@ export function rollUp(
     buckets.set(key, bucket);
   }
   return [...buckets.values()];
+}
+
+/** Totals per weekday (0 = Sunday) from a daily series. */
+function weekdayTotals(daily: SeriesPoint[]) {
+  const weekdays = Array.from({ length: 7 }, (_, day) => ({ weekday: day, seconds: 0 }));
+  for (const point of daily)
+    weekdays[weekday(parseLocalDate(point.date))]!.seconds += point.seconds;
+  return weekdays;
+}
+
+function toSessionLengths(
+  rows: { bucket: SessionLengthBucket['key']; sessions: number; seconds: number }[],
+): SessionLengthBucket[] {
+  const byKey = new Map(rows.map((row) => [row.bucket, row]));
+  return (['short', 'medium', 'long'] as const).map((key) => ({
+    key,
+    label: SESSION_LENGTH_LABELS[key],
+    sessions: byKey.get(key)?.sessions ?? 0,
+    seconds: byKey.get(key)?.seconds ?? 0,
+  }));
 }
 
 function scopeFrom(userId: string, query: AnalyticsQuery): SessionScope {
@@ -276,18 +302,6 @@ export const analyticsService = {
       analyticsRepository.byDevice(scope, range.from, range.to),
     ]);
 
-    const weekdays = Array.from({ length: 7 }, (_, day) => ({ weekday: day, seconds: 0 }));
-    for (const point of current.daily)
-      weekdays[weekday(parseLocalDate(point.date))]!.seconds += point.seconds;
-
-    const lengthsByKey = new Map(current.lengths.map((bucket) => [bucket.bucket, bucket]));
-    const sessionLengths = (['short', 'medium', 'long'] as const).map((key) => ({
-      key,
-      label: SESSION_LENGTH_LABELS[key],
-      sessions: lengthsByKey.get(key)?.sessions ?? 0,
-      seconds: lengthsByKey.get(key)?.seconds ?? 0,
-    }));
-
     return {
       range: {
         from: range.from.toISOString(),
@@ -303,7 +317,7 @@ export const analyticsService = {
       weekly: rollUp(current.daily, 'week', weekStartsOn),
       monthly: rollUp(current.daily, 'month', weekStartsOn),
       hourly,
-      weekdays,
+      weekdays: weekdayTotals(current.daily),
       projects: toBreakdown(projects),
       languages: languages.map((row) => ({
         id: row.language,
@@ -312,7 +326,77 @@ export const analyticsService = {
         seconds: row.seconds,
       })),
       devices,
-      sessionLengths,
+      sessionLengths: toSessionLengths(current.lengths),
+    };
+  },
+
+  /**
+   * A project's whole coding record, from account creation (or its first session, if earlier)
+   * to today. Ownership of the project must be checked by the caller.
+   */
+  async projectHistory(
+    userId: string,
+    projectId: string,
+    now = new Date(),
+  ): Promise<ProjectHistoryDto> {
+    const { timezone, weekStartsOn } = await getUserCalendar(userId);
+    const scope: SessionScope = { userId, projectId };
+    const [accountCreatedAt, span, activeDays, hourly, lengths] = await Promise.all([
+      analyticsRepository.accountCreatedAt(userId),
+      analyticsRepository.activitySpan(scope),
+      analyticsRepository.activeDaysAllTime(scope, timezone),
+      analyticsRepository.hourOfDayAllTime(scope, timezone),
+      // Every session in scope: none can start before the first one or in the future.
+      analyticsRepository.sessionLengths(scope, new Date(0), addDaysToInstant(now, 1)),
+    ]);
+
+    const today = formatLocalDate(toLocalDate(now, timezone));
+    const candidates = [
+      accountCreatedAt && formatLocalDate(toLocalDate(accountCreatedAt, timezone)),
+      activeDays[0]?.date,
+      today,
+    ].filter((date): date is string => Boolean(date));
+    // YYYY-MM-DD strings sort chronologically.
+    const sinceDate = candidates.sort()[0]!;
+
+    // Zero-fill every day so weeks and months without coding still appear in the history.
+    const byDate = new Map(activeDays.map((point) => [point.date, point]));
+    const daily: SeriesPoint[] = [];
+    for (let date = parseLocalDate(sinceDate); ; date = addDays(date, 1)) {
+      const key = formatLocalDate(date);
+      daily.push(byDate.get(key) ?? { date: key, seconds: 0, sessions: 0 });
+      if (key >= today) break;
+    }
+
+    const seconds = activeDays.reduce((sum, point) => sum + point.seconds, 0);
+    const sessions = activeDays.reduce((sum, point) => sum + point.sessions, 0);
+    const codedDays = activeDays.filter((point) => point.seconds > 0);
+    const longest = codedDays.reduce<SeriesPoint | null>(
+      (best, point) => (!best || point.seconds > best.seconds ? point : best),
+      null,
+    );
+
+    return {
+      timezone,
+      sinceDate,
+      toDate: today,
+      days: daily.length,
+      firstActivityAt: span.first?.toISOString() ?? null,
+      lastActivityAt: span.last?.toISOString() ?? null,
+      totals: {
+        seconds,
+        sessions,
+        activeDays: codedDays.length,
+        averageActiveDaySeconds: codedDays.length ? Math.round(seconds / codedDays.length) : 0,
+        averageSessionSeconds: sessions ? Math.round(seconds / sessions) : 0,
+        longestDay: longest ? { date: longest.date, seconds: longest.seconds } : null,
+      },
+      daily: daily.slice(-PROJECT_HISTORY_RECENT_DAYS),
+      weekly: rollUp(daily, 'week', weekStartsOn),
+      monthly: rollUp(daily, 'month', weekStartsOn),
+      hourly,
+      weekdays: weekdayTotals(daily),
+      sessionLengths: toSessionLengths(lengths),
     };
   },
 

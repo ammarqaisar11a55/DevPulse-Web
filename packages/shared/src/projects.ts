@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SeriesPoint, SessionLengthBucket } from './analytics';
 import { languageSchema, optionalQueryString, paginationQuerySchema } from './common';
 
 /** Keys map to the chart palette slots 1–6, in order. */
@@ -107,4 +108,45 @@ export interface ProjectDetailDto extends ProjectDto {
   weekSeconds: number;
   languages: { language: string; seconds: number }[];
   devices: { id: string; name: string; seconds: number }[];
+}
+
+/** Days of zero-filled daily history returned with a project's all-time history. */
+export const PROJECT_HISTORY_RECENT_DAYS = 90;
+
+/**
+ * A project's complete coding record, from the day the account was created (or the first
+ * recorded session, if earlier) to today, in the user's time zone. Unlike analytics reports it
+ * has no maximum range.
+ */
+export interface ProjectHistoryDto {
+  timezone: string;
+  /** First day covered, YYYY-MM-DD. */
+  sinceDate: string;
+  /** Today, YYYY-MM-DD. */
+  toDate: string;
+  /** Calendar days from sinceDate to toDate inclusive. */
+  days: number;
+  firstActivityAt: string | null;
+  lastActivityAt: string | null;
+  totals: {
+    seconds: number;
+    sessions: number;
+    /** Days with any coding on this project. */
+    activeDays: number;
+    /** Mean active time per day that had coding. */
+    averageActiveDaySeconds: number;
+    averageSessionSeconds: number;
+    longestDay: { date: string; seconds: number } | null;
+  };
+  /** Zero-filled, the most recent PROJECT_HISTORY_RECENT_DAYS days (or fewer, from sinceDate). */
+  daily: SeriesPoint[];
+  /** Zero-filled, every week from sinceDate. Dates are the first day of the week. */
+  weekly: SeriesPoint[];
+  /** Zero-filled, every month from sinceDate. Dates are the first day of the month. */
+  monthly: SeriesPoint[];
+  /** 24 entries, local hour 0–23, across all time. */
+  hourly: { hour: number; seconds: number }[];
+  /** 7 entries, 0 = Sunday, across all time. */
+  weekdays: { weekday: number; seconds: number }[];
+  sessionLengths: SessionLengthBucket[];
 }

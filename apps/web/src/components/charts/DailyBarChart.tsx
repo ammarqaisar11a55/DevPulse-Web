@@ -31,6 +31,11 @@ const longDate = new Intl.DateTimeFormat(undefined, {
   timeZone: 'UTC',
 });
 const monthName = new Intl.DateTimeFormat(undefined, { month: 'short', timeZone: 'UTC' });
+const monthYear = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  year: '2-digit',
+  timeZone: 'UTC',
+});
 const monthLong = new Intl.DateTimeFormat(undefined, {
   month: 'long',
   year: 'numeric',
@@ -47,9 +52,11 @@ export function DailyBarChart({
   const max = Math.max(0, ...data.map((point) => point.seconds));
   const ticks = hourTicks(max);
   const total = data.reduce((sum, point) => sum + point.seconds, 0);
+  // Month names alone repeat once a series crosses into another year.
+  const spansYears = data.length > 0 && data[0]!.date.slice(0, 4) !== data.at(-1)!.date.slice(0, 4);
 
   const tickLabel = (key: string) => {
-    if (granularity === 'month') return monthName.format(dateOf(key));
+    if (granularity === 'month') return (spansYears ? monthYear : monthName).format(dateOf(key));
     if (granularity === 'week' || tickFormat === 'day') return shortDate.format(dateOf(key));
     return weekday.format(dateOf(key));
   };

@@ -5,6 +5,7 @@ import {
   type ProjectColor,
   type ProjectDetailDto,
   type ProjectDto,
+  type ProjectHistoryDto,
   type updateProjectSchema,
 } from '@devpulse/shared';
 import type { Prisma, Project } from '@prisma/client';
@@ -13,6 +14,7 @@ import { activeSecondsInRange } from '../../database/session-time';
 import { notFound } from '../../utils/errors';
 import { pageMeta } from '../../utils/pagination';
 import { calendarBoundaries } from '../../utils/time';
+import { analyticsService } from '../analytics/analytics.service';
 import { getUserCalendar } from '../users/user-context';
 import {
   projectsRepository,
@@ -117,6 +119,12 @@ export const projectsService = {
       projectsRepository.deviceBreakdown(id),
     ]);
     return { ...toDto(project, totals), weekSeconds, languages, devices };
+  },
+
+  /** Coding history since the account was created, for the project detail page. */
+  async history(userId: string, id: string): Promise<ProjectHistoryDto> {
+    await requireOwned(userId, id);
+    return analyticsService.projectHistory(userId, id);
   },
 
   async create(userId: string, input: z.output<typeof createProjectSchema>) {

@@ -17,6 +17,10 @@ export const projectsController = {
     res.json({ data: await projectsService.get(currentUserId(req), idOf(req)) });
   }) satisfies RequestHandler,
 
+  history: (async (req, res) => {
+    res.json({ data: await projectsService.history(currentUserId(req), idOf(req)) });
+  }) satisfies RequestHandler,
+
   create: (async (req, res) => {
     res
       .status(201)

@@ -184,6 +184,74 @@ export const analyticsRepository = {
     `;
   },
 
+  /*
+   * All-time variants. Instead of generating every calendar bucket in a range and probing for
+   * sessions, each session is expanded into only the local days (or hours) it spans. Sessions are
+   * at most MAX_SESSION_SECONDS long, so the cost grows with the number of sessions in scope, not
+   * with how long the account has existed.
+   */
+
+  /** Active seconds and sessions started per local day, for days that have any activity. */
+  async activeDaysAllTime(scope: SessionScope, timeZone: string) {
+    const dayStart = Prisma.sql`(d AT TIME ZONE ${timeZone})`;
+    const dayEnd = Prisma.sql`((d + interval '1 day') AT TIME ZONE ${timeZone})`;
+    const rows = await prisma.$queryRaw<{ date: string; seconds: number; sessions: number }[]>`
+      SELECT to_char(d, 'YYYY-MM-DD') AS date,
+             SUM(cs.active_seconds * ${overlapRatio(dayStart, dayEnd)})::float8 AS seconds,
+             COUNT(*) FILTER (WHERE cs.started_at >= ${dayStart} AND cs.started_at < ${dayEnd})::int AS sessions
+      FROM coding_sessions cs
+      CROSS JOIN LATERAL generate_series(
+        date_trunc('day', cs.started_at AT TIME ZONE ${timeZone}),
+        date_trunc('day', ${EFFECTIVE_END} AT TIME ZONE ${timeZone}),
+        interval '1 day'
+      ) AS d
+      WHERE ${scopeConditions(scope)}
+      GROUP BY d
+      ORDER BY d
+    `;
+    return rows
+      .map((row) => ({ ...row, seconds: Math.round(row.seconds) }))
+      .filter((row) => row.seconds > 0 || row.sessions > 0);
+  },
+
+  /** Active seconds per local hour of day (0–23) across every session in scope. */
+  async hourOfDayAllTime(scope: SessionScope, timeZone: string) {
+    const hourStart = Prisma.sql`(h AT TIME ZONE ${timeZone})`;
+    const hourEnd = Prisma.sql`((h + interval '1 hour') AT TIME ZONE ${timeZone})`;
+    const rows = await prisma.$queryRaw<{ hour: number; seconds: number }[]>`
+      SELECT EXTRACT(HOUR FROM h)::int AS hour,
+             SUM(cs.active_seconds * ${overlapRatio(hourStart, hourEnd)})::float8 AS seconds
+      FROM coding_sessions cs
+      CROSS JOIN LATERAL generate_series(
+        date_trunc('hour', cs.started_at AT TIME ZONE ${timeZone}),
+        date_trunc('hour', ${EFFECTIVE_END} AT TIME ZONE ${timeZone}),
+        interval '1 hour'
+      ) AS h
+      WHERE ${scopeConditions(scope)}
+      GROUP BY 1
+    `;
+    const byHour = new Map(rows.map((row) => [row.hour, Math.round(row.seconds)]));
+    return Array.from({ length: 24 }, (_, hour) => ({ hour, seconds: byHour.get(hour) ?? 0 }));
+  },
+
+  /** First session start and latest activity in scope. */
+  async activitySpan(scope: SessionScope) {
+    const rows = await prisma.$queryRaw<{ first: Date | null; last: Date | null }[]>`
+      SELECT MIN(cs.started_at) AS first, MAX(${EFFECTIVE_END}) AS last
+      FROM coding_sessions cs
+      WHERE ${scopeConditions(scope)}
+    `;
+    return { first: rows[0]?.first ?? null, last: rows[0]?.last ?? null };
+  },
+
+  async accountCreatedAt(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { createdAt: true },
+    });
+    return user?.createdAt ?? null;
+  },
+
   totalProjectCount(userId: string) {
     return prisma.project.count({ where: { userId, archivedAt: null } });
   },

@@ -184,18 +184,58 @@ Fields not listed are ignored (for example `email` on `PATCH /users/me`).
 
 ### Projects
 
-| Method | Path            | Auth | Description                                                                                                                                        |
-| ------ | --------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/projects`     | user | List with totals. Query: `search`, `language`, `status` (`active`/`archived`/`all`), `sort` (`recent`/`name`/`time`/`created`), `page`, `pageSize` |
-| POST   | `/projects`     | user | Create. `201`                                                                                                                                      |
-| GET    | `/projects/:id` | user | Detail with `weekSeconds`, `languages[]` and `devices[]` breakdowns                                                                                |
-| PATCH  | `/projects/:id` | user | Update fields or `archived: true/false`                                                                                                            |
-| DELETE | `/projects/:id` | user | Delete; its sessions are kept but unassigned. `204`                                                                                                |
+| Method | Path                    | Auth | Description                                                                                                                                        |
+| ------ | ----------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/projects`             | user | List with totals. Query: `search`, `language`, `status` (`active`/`archived`/`all`), `sort` (`recent`/`name`/`time`/`created`), `page`, `pageSize` |
+| POST   | `/projects`             | user | Create. `201`                                                                                                                                      |
+| GET    | `/projects/:id`         | user | Detail with `weekSeconds`, `languages[]` and `devices[]` breakdowns                                                                                |
+| GET    | `/projects/:id/history` | user | All-time coding history (see below)                                                                                                                |
+| PATCH  | `/projects/:id`         | user | Update fields or `archived: true/false`                                                                                                            |
+| DELETE | `/projects/:id`         | user | Delete; its sessions are kept but unassigned. `204`                                                                                                |
 
 Body fields: `name` (1–80), `description` (≤500), `repositoryUrl` (http(s); `.git` and trailing
 slashes are stripped; the provider is detected), `primaryLanguage`, `color` (one of `blue`,
 `teal`, `violet`, `amber`, `magenta`, `orange`; chosen automatically when omitted).
 Each project includes `totalSeconds` (active time) and `sessionCount`.
+
+`GET /projects/:id/history` returns the project's complete record, from the day the account was
+created (or the project's first session, if earlier) to today, in the user's time zone. Unlike
+`/analytics/report` it has no maximum range.
+
+```json
+{
+  "data": {
+    "timezone": "Asia/Karachi",
+    "sinceDate": "2025-08-14",
+    "toDate": "2026-10-03",
+    "days": 416,
+    "firstActivityAt": "2025-08-15T04:12:00.000Z",
+    "lastActivityAt": "2026-10-02T13:42:00.000Z",
+    "totals": {
+      "seconds": 508528,
+      "sessions": 103,
+      "activeDays": 59,
+      "averageActiveDaySeconds": 8619,
+      "averageSessionSeconds": 4937,
+      "longestDay": { "date": "2026-07-15", "seconds": 26100 }
+    },
+    "daily": [{ "date": "2026-07-06", "seconds": 5400, "sessions": 2 }],
+    "weekly": [{ "date": "2025-08-11", "seconds": 0, "sessions": 0 }],
+    "monthly": [{ "date": "2025-08-01", "seconds": 7200, "sessions": 3 }],
+    "hourly": [{ "hour": 0, "seconds": 3600 }],
+    "weekdays": [{ "weekday": 0, "seconds": 18000 }],
+    "sessionLengths": [
+      { "key": "short", "label": "Under 30 minutes", "sessions": 12, "seconds": 14400 }
+    ]
+  }
+}
+```
+
+`weekly` and `monthly` are zero-filled across the whole history (dates are the first day of each
+week or month); `daily` is zero-filled for the most recent 90 days. `hourly` (24 entries),
+`weekdays` (7 entries, 0 = Sunday) and `sessionLengths` cover all time. Sessions spanning a
+boundary are split proportionally. Errors: `404` if the project does not exist or belongs to
+another user.
 
 ### Sessions
 
