@@ -59,6 +59,7 @@ describe('global search', () => {
       id: session.id,
       title: 'Notes sync engine',
       subtitle: 'Notes Saver',
+      href: `/sessions/${session.id}`,
     });
     expect(byType.devices.results[0]).toMatchObject({ title: 'Notes laptop', href: '/devices' });
   });

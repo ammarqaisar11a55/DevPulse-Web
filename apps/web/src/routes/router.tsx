@@ -18,6 +18,18 @@ const appRoutes: RouteObject[] = [
     lazy: page(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage'),
   },
   {
+    path: 'activity',
+    lazy: page(() => import('@/features/activity/ActivityPage'), 'ActivityPage'),
+  },
+  {
+    path: 'sessions',
+    lazy: page(() => import('@/features/sessions/SessionsPage'), 'SessionsPage'),
+  },
+  {
+    path: 'sessions/:sessionId',
+    lazy: page(() => import('@/features/sessions/SessionDetailPage'), 'SessionDetailPage'),
+  },
+  {
     path: 'projects',
     lazy: page(() => import('@/features/projects/ProjectsPage'), 'ProjectsPage'),
   },

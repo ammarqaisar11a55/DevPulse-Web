@@ -9,12 +9,11 @@ import { Dialog, DialogClose, DialogContent } from '@/components/ui/Dialog';
 import { Field, Input, Select } from '@/components/ui/Field';
 import { activityApi, activityKeys } from '@/features/activity/activity-api';
 import { useCurrentUser } from '@/features/auth/auth-context';
-import { projectKeys } from '@/features/projects/projects-api';
 import { applyServerErrors } from '@/lib/form-errors';
 import { COMMON_LANGUAGES, languageName } from '@/lib/languages';
 import { localDateKey } from '@/lib/timezone';
 import { parseLocalDate, startOfLocalDay } from '@devpulse/shared/time';
-import { sessionKeys, sessionsApi } from '../sessions-api';
+import { invalidateSessionData, sessionsApi } from '../sessions-api';
 
 const timeOfDay = z.string().regex(/^\d{2}:\d{2}$/, 'Enter a time');
 
@@ -84,10 +83,7 @@ export function LogSessionDialog({
       });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: sessionKeys.all });
-      void queryClient.invalidateQueries({ queryKey: ['activity'] });
-      void queryClient.invalidateQueries({ queryKey: ['analytics'] });
-      void queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      invalidateSessionData(queryClient);
       toast.success('Session logged');
       onOpenChange(false);
     },

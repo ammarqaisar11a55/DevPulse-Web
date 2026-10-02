@@ -5,6 +5,7 @@ import type {
   ListSessionsQuery,
   PaginatedResponse,
 } from '@devpulse/shared';
+import type { QueryClient } from '@tanstack/react-query';
 import { api, apiRequest } from '@/lib/api-client';
 
 export const sessionKeys = {
@@ -30,4 +31,11 @@ export function sessionTitle(session: Pick<CodingSessionDto, 'title' | 'branch'>
   if (session.branch && session.branch !== 'main' && session.branch !== 'master')
     return `Worked on ${session.branch}`;
   return 'Coding session';
+}
+
+/** Refreshes every view derived from session time after a session is added, edited or removed. */
+export function invalidateSessionData(queryClient: QueryClient) {
+  for (const queryKey of [sessionKeys.all, ['activity'], ['analytics'], ['projects'], ['goals']]) {
+    void queryClient.invalidateQueries({ queryKey });
+  }
 }

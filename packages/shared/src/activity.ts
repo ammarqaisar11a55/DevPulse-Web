@@ -105,18 +105,21 @@ export const activityFiltersSchema = z.object({
   repository: optionalQueryString(200),
 });
 
+/** Query parameters as a client sends them: timestamps travel as ISO 8601 strings. */
+type ClientQuery<T> = Partial<Omit<T, 'from' | 'to'>> & { from?: string; to?: string };
+
 export const listSessionsQuerySchema = paginationQuerySchema.extend({
   ...activityFiltersSchema.shape,
   source: z.enum(SESSION_SOURCES).optional(),
   sort: z.enum(['recent', 'oldest', 'longest']).default('recent'),
 });
-export type ListSessionsQuery = Partial<z.output<typeof listSessionsQuerySchema>>;
+export type ListSessionsQuery = ClientQuery<z.output<typeof listSessionsQuerySchema>>;
 
 export const timelineQuerySchema = activityFiltersSchema.extend({
   cursor: optionalQueryString(200),
   limit: z.coerce.number().int().min(1).max(100).default(30),
 });
-export type TimelineQuery = Partial<z.output<typeof timelineQuerySchema>>;
+export type TimelineQuery = ClientQuery<z.output<typeof timelineQuerySchema>>;
 
 /**
  * Event metadata is an allow-list of small, non-content fields. Unknown keys are rejected so

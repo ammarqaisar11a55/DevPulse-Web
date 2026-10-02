@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 import { cn } from '@/lib/cn';
 import { Skeleton } from './Skeleton';
 
@@ -20,7 +21,11 @@ interface DataTableProps<T> {
   rows: T[];
   rowKey: (row: T) => string;
   caption: string;
-  onRowClick?: (row: T) => void;
+  /**
+   * Makes each row a link. The primary cell holds a real anchor stretched over the row, so rows
+   * are reachable by keyboard and can be opened in a new tab.
+   */
+  rowHref?: (row: T) => string;
   loading?: boolean;
   loadingRows?: number;
   empty?: ReactNode;
@@ -35,7 +40,7 @@ export function DataTable<T>({
   rows,
   rowKey,
   caption,
-  onRowClick,
+  rowHref,
   loading,
   loadingRows = 6,
   empty,
@@ -77,29 +82,40 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                className={cn(
-                  'border-b border-line last:border-0',
-                  onRowClick && 'cursor-pointer transition-colors hover:bg-surface-2',
-                )}
-              >
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={cn(
-                      'tabular px-4 py-3 align-middle first:pl-5 last:pr-5',
-                      column.align === 'right' && 'text-right',
-                      column.className,
-                    )}
-                  >
-                    {column.cell(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const href = rowHref?.(row);
+              return (
+                <tr
+                  key={rowKey(row)}
+                  className={cn(
+                    'border-b border-line last:border-0',
+                    href && 'relative transition-colors hover:bg-surface-2',
+                  )}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={cn(
+                        'tabular px-4 py-3 align-middle first:pl-5 last:pr-5',
+                        column.align === 'right' && 'text-right',
+                        column.className,
+                      )}
+                    >
+                      {href && column === primary ? (
+                        <Link
+                          to={href}
+                          className="outline-none after:absolute after:inset-0 focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-focus"
+                        >
+                          {column.cell(row)}
+                        </Link>
+                      ) : (
+                        column.cell(row)
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -119,16 +135,13 @@ export function DataTable<T>({
               </dl>
             </>
           );
+          const href = rowHref?.(row);
           return (
             <li key={rowKey(row)}>
-              {onRowClick ? (
-                <button
-                  type="button"
-                  onClick={() => onRowClick(row)}
-                  className="w-full px-4 py-3.5 text-left hover:bg-surface-2"
-                >
+              {href ? (
+                <Link to={href} className="block px-4 py-3.5 hover:bg-surface-2">
                   {content}
-                </button>
+                </Link>
               ) : (
                 <div className="px-4 py-3.5">{content}</div>
               )}
