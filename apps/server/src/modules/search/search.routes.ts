@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { searchQuerySchema, type SearchType } from '@devpulse/shared';
 import { currentUserId, requireUser } from '../../middleware/authenticate';
-import { createRateLimiter } from '../../middleware/rate-limit';
+import { createRateLimiter, principalKey } from '../../middleware/rate-limit';
 import { valid, validate } from '../../middleware/validate';
 import { searchService } from './search.service';
 
@@ -9,7 +9,7 @@ import { searchService } from './search.service';
 const searchLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   limit: 120,
-  keyGenerator: (req) => req.auth?.userId ?? req.ip ?? 'unknown',
+  keyGenerator: principalKey((req) => req.auth?.userId),
 });
 
 export const searchRouter = Router();

@@ -1,4 +1,5 @@
-import { rateLimit, type Options } from 'express-rate-limit';
+import type { Request } from 'express';
+import { ipKeyGenerator, rateLimit, type Options } from 'express-rate-limit';
 import { isTest } from '../config/env';
 import { rateLimited } from '../utils/errors';
 
@@ -21,3 +22,11 @@ export const globalApiLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   limit: 300,
 });
+
+/**
+ * Keys a limiter by an authenticated principal (user or device id), falling back to the client
+ * address. IPv6 addresses are grouped by subnet so one client cannot rotate through its range.
+ */
+export function principalKey(principal: (req: Request) => string | undefined) {
+  return (req: Request) => principal(req) ?? (req.ip ? ipKeyGenerator(req.ip) : 'unknown');
+}

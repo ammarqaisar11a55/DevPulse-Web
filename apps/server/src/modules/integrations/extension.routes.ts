@@ -8,7 +8,7 @@ import {
 } from '@devpulse/shared';
 import type { z } from 'zod';
 import { prisma } from '../../database/prisma';
-import { createRateLimiter } from '../../middleware/rate-limit';
+import { createRateLimiter, principalKey } from '../../middleware/rate-limit';
 import { valid, validate } from '../../middleware/validate';
 import { emitDomainEvent } from '../../utils/domain-events';
 import { activityService } from '../activity/activity.service';
@@ -27,7 +27,7 @@ import { applyTrackingPreferences } from './tracking-privacy';
 const ingestLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   limit: 120,
-  keyGenerator: (req) => req.device?.deviceId ?? req.ip ?? 'unknown',
+  keyGenerator: principalKey((req) => req.device?.deviceId),
 });
 
 /** Mounted at /activity: session and event ingestion. */
