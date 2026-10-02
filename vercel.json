@@ -44,5 +44,6 @@
       "path": "/api/v1/internal/cron/close-stale-sessions",
       "schedule": "0 3 * * *"
     }
-  ]
+  ],
+  "regions": ["hnd1"]
 }
