@@ -1,7 +1,9 @@
+import { Download } from 'lucide-react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import { useRef } from 'react';
 import { PulseWeekPreview } from '@/components/pulse/PulseWeekPreview';
 import { ButtonLink } from '@/components/ui/Button';
+import { EXTENSION_DOWNLOAD_URL } from './links';
 
 export function LandingHero() {
   const ref = useRef<HTMLElement>(null);
@@ -32,6 +34,15 @@ export function LandingHero() {
             View dashboard
           </ButtonLink>
         </div>
+        <a
+          href={EXTENSION_DOWNLOAD_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-ink-muted hover:text-ink"
+        >
+          <Download className="size-4" aria-hidden />
+          Download the VS Code extension
+        </a>
         <p className="mt-4 text-sm text-ink-subtle">
           Free to use. Your source code never leaves your machine.
         </p>

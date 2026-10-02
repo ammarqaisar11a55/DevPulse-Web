@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { Logo } from '@/components/Logo';
 import {
   API_DOCS_URL,
+  DEVELOPER_PORTFOLIO_URL,
   DOCS_URL,
   EXTENSION_REPOSITORY_URL,
   ISSUES_URL,
@@ -73,9 +74,20 @@ export function LandingFooter() {
           </nav>
         ))}
       </div>
-      <p className="mx-auto max-w-6xl px-4 pb-10 text-xs text-ink-subtle sm:px-6">
-        © {new Date().getFullYear()} DevPulse
-      </p>
+      <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-x-6 gap-y-2 px-4 pb-10 text-xs text-ink-subtle sm:px-6">
+        <p>© {new Date().getFullYear()} DevPulse</p>
+        <p>
+          Designed and built by{' '}
+          <a
+            href={DEVELOPER_PORTFOLIO_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-medium text-ink-muted underline-offset-2 hover:text-ink hover:underline"
+          >
+            Muhammad Ammar Qaisar
+          </a>
+        </p>
+      </div>
     </footer>
   );
 }

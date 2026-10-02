@@ -1,4 +1,6 @@
+import { Download } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
+import { buttonClasses } from '@/components/ui/button-classes';
 import { DayScrubSection } from './DayScrubSection';
 import { LandingFeatures } from './LandingFeatures';
 import { LandingFooter } from './LandingFooter';
@@ -6,6 +8,7 @@ import { LandingHeader } from './LandingHeader';
 import { LandingHero } from './LandingHero';
 import { LandingHowItWorks } from './LandingHowItWorks';
 import { LandingPrivacy } from './LandingPrivacy';
+import { EXTENSION_DOWNLOAD_URL } from './links';
 import { Reveal, ScrollProgressBar } from './motion';
 
 export function LandingPage() {
@@ -29,9 +32,20 @@ export function LandingPage() {
                 Create an account, connect VS Code, and your first session appears within minutes.
               </p>
             </div>
-            <ButtonLink to="/register" size="lg">
-              Get started
-            </ButtonLink>
+            <div className="flex flex-wrap gap-3 md:shrink-0">
+              <ButtonLink to="/register" size="lg">
+                Get started
+              </ButtonLink>
+              <a
+                href={EXTENSION_DOWNLOAD_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={buttonClasses('secondary', 'lg')}
+              >
+                <Download aria-hidden />
+                Download for VS Code
+              </a>
+            </div>
           </Reveal>
         </section>
       </main>
