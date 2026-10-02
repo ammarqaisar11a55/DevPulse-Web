@@ -35,6 +35,12 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional().default(''),
   SMTP_SECURE: booleanString,
   EMAIL_FROM: z.string().default('DevPulse <no-reply@devpulse.local>'),
+
+  /**
+   * Bearer token for scheduled job endpoints (Vercel Cron sends it automatically). The
+   * endpoints are disabled while it is empty.
+   */
+  CRON_SECRET: z.string().optional().default(''),
 });
 
 export type Env = z.infer<typeof envSchema>;

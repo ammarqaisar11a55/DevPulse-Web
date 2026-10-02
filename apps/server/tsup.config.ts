@@ -1,7 +1,8 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/server.ts'],
+  // server.js runs a standalone process; app.js exports the Express app for serverless hosts.
+  entry: ['src/server.ts', 'src/app.ts'],
   format: ['esm'],
   platform: 'node',
   target: 'node20',

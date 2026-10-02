@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { activityRouter } from './modules/activity/activity.routes';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { authRouter } from './modules/auth/auth.routes';
+import { cronRouter } from './modules/cron/cron.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
 import { goalsRouter } from './modules/goals/goals.routes';
 import { healthRouter } from './modules/health/health.routes';
@@ -31,5 +32,6 @@ export function createApiRouter() {
   router.use('/analytics', analyticsRouter);
   router.use('/leaderboard', leaderboardRouter);
   router.use('/search', searchRouter);
+  router.use('/internal/cron', cronRouter);
   return router;
 }

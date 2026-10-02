@@ -186,3 +186,29 @@ place that would change.
 - [ ] `npm run db:deploy` run before starting the new version
 - [ ] Health checks wired to `/api/v1/health/ready`
 - [ ] Database backups scheduled
+
+## Deploying to Vercel
+
+The repository deploys to Vercel as one project: the web app is served as static files and the
+API runs as a serverless function on the same domain ([`vercel.json`](../vercel.json),
+[`api/index.js`](../api/index.js)), so the refresh cookie stays first-party.
+
+1. Import the GitHub repository into Vercel. Leave the framework preset as **Other**; the build
+   settings come from `vercel.json`.
+2. Add every backend variable from [`.env.production.example`](../.env.production.example) in
+   **Project Settings → Environment Variables**, with these differences:
+   - `DATABASE_URL`: the Supabase **transaction pooler** URI (port 6543) with
+     `?pgbouncer=true&connection_limit=1&sslmode=require`.
+   - `FRONTEND_URL` and `API_URL`: the production domain, for example
+     `https://devpulse.vercel.app`.
+   - `TRUST_PROXY=1` and `COOKIE_SECURE=true`.
+   - `CRON_SECRET`: a random value. Vercel Cron sends it to the stale-session job.
+3. Run migrations from your machine with the session pooler URI: `npm run db:deploy:prod`.
+4. Deploy. Every push to `main` deploys again.
+
+Serverless differences:
+
+- The stale-session sweep runs from Vercel Cron, once a day by default (the Hobby plan's limit).
+  On Pro, change the schedule in `vercel.json` to `*/5 * * * *`. Totals are unaffected either
+  way; only the "in progress" label lingers on abandoned sessions.
+- Rate limits are counted per function instance, so they are looser than on a single server.
