@@ -10,13 +10,17 @@ through the pairing and ingestion API that is already implemented; see
 
 ## Features
 
-- **Accounts:** registration, sign-in by email or username, password reset by email, active
-  session management, sign out everywhere, account deletion.
+- **Accounts:** registration, sign-in by email or username, password reset by email, email
+  changes confirmed from the new address, active session management, sign out everywhere,
+  account deletion.
 - **Dashboard:** today's sessions on a 24-hour pulse strip, weekly totals compared with last week,
   streak, 7-day chart, top projects and languages, goals and recent sessions.
 - **Analytics:** coding time by day, week or month; hour-of-day and weekday patterns; project,
   language and device breakdowns; session lengths; filters and custom date ranges.
-- **Projects:** create, edit, archive and delete projects; totals, language and device breakdowns.
+- **Activity and sessions:** a day-by-day activity timeline, a filterable session list and a
+  detail page per session (active vs idle time, languages, changes, editor events).
+- **Projects:** create, edit, archive and delete projects; totals, language and device
+  breakdowns, and each project's full coding history since the account was created.
 - **Goals:** daily, weekly or monthly targets for coding time or sessions, with progress
   notifications.
 - **VS Code integration:** single-use pairing keys, device credentials, session and event
@@ -201,13 +205,7 @@ Run from the repository root:
 
 Implemented and tested: everything listed under [Features](#features). Still to do:
 
-- **Sessions page** (`/sessions`) and **Activity timeline page** (`/activity`), plus a
-  **session detail page**. The API (`GET /sessions`, `GET /activity/timeline`,
-  `GET /sessions/:id`), API clients, filter bar and manual logging dialog exist; the pages and
-  their navigation links are not built yet.
-- **Project detail charts:** the project page shows totals and breakdowns; time-series charts can
-  reuse `/analytics/report?projectId=…`.
-- **Terms of service page**, and email verification for new addresses.
-- **Multi-instance deployments:** a shared rate-limit store and a single job runner (see
-  [Scaling](docs/DEPLOYMENT.md#scaling)).
+- **Multi-instance deployments:** rate limits and background jobs are in-process, so run a
+  single API instance (see [Scaling](docs/DEPLOYMENT.md#scaling)).
+- **Legal review** of the terms of service before a public launch.
 - **The VS Code extension itself**, which is the next phase.
