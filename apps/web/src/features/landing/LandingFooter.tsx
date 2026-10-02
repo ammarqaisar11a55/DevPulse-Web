@@ -1,6 +1,12 @@
 import { Link } from 'react-router';
 import { Logo } from '@/components/Logo';
-import { API_DOCS_URL, DOCS_URL, ISSUES_URL, REPOSITORY_URL } from './links';
+import {
+  API_DOCS_URL,
+  DOCS_URL,
+  EXTENSION_REPOSITORY_URL,
+  ISSUES_URL,
+  REPOSITORY_URL,
+} from './links';
 
 const COLUMNS = [
   {
@@ -16,6 +22,7 @@ const COLUMNS = [
     links: [
       { label: 'Documentation', href: DOCS_URL, external: true },
       { label: 'API reference', href: API_DOCS_URL, external: true },
+      { label: 'VS Code extension', href: EXTENSION_REPOSITORY_URL, external: true },
       { label: 'GitHub', href: REPOSITORY_URL, external: true },
     ],
   },

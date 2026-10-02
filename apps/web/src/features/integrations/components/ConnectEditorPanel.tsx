@@ -1,18 +1,45 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreatedPairingKeyDto } from '@devpulse/shared';
 import { Check, Copy, KeyRound, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
+import { GitHubMark } from '@/components/GitHubMark';
 import { Button } from '@/components/ui/Button';
 import { Panel, PanelBody, PanelHeader } from '@/components/ui/Panel';
+import { EXTENSION_DOWNLOAD_URL, EXTENSION_REPOSITORY_URL } from '@/features/landing/links';
 import { getErrorMessage } from '@/lib/api-client';
 import { integrationKeys, integrationsApi } from '../integrations-api';
 import { formatCountdown, useCountdown } from '../useCountdown';
 
-const STEPS = [
-  'Install the DevPulse extension from the VS Code Marketplace.',
-  'Generate a connection key below.',
-  'In VS Code, run "DevPulse: Connect account" and enter the key.',
+const STEPS: { key: string; content: ReactNode }[] = [
+  {
+    key: 'install',
+    content: (
+      <>
+        <a
+          href={EXTENSION_DOWNLOAD_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="font-medium text-accent hover:underline"
+        >
+          Download the DevPulse extension
+        </a>{' '}
+        (the <code className="font-mono text-xs">.vsix</code> file) and install it in VS Code: open
+        Extensions, choose <span className="font-medium">⋯</span> then{' '}
+        <span className="font-medium">Install from VSIX…</span>
+      </>
+    ),
+  },
+  { key: 'key', content: 'Generate a connection key below.' },
+  {
+    key: 'connect',
+    content: (
+      <>
+        In VS Code, run <span className="font-medium">DevPulse: Connect Account</span> and enter the
+        key.
+      </>
+    ),
+  },
 ];
 
 function ActiveKey({
@@ -121,14 +148,23 @@ export function ConnectEditorPanel({ connectedCount }: { connectedCount: number 
       <PanelBody className="grid gap-6">
         <ol className="grid gap-3">
           {STEPS.map((step, index) => (
-            <li key={step} className="flex gap-3 text-sm">
+            <li key={step.key} className="flex gap-3 text-sm">
               <span className="tabular grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-semibold text-accent-ink">
                 {index + 1}
               </span>
-              <span className="pt-0.5">{step}</span>
+              <span className="pt-0.5">{step.content}</span>
             </li>
           ))}
         </ol>
+        <a
+          href={EXTENSION_REPOSITORY_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex w-fit items-center gap-2 text-sm text-ink-muted hover:text-ink"
+        >
+          <GitHubMark />
+          View the extension's source code on GitHub
+        </a>
 
         {created ? (
           <ActiveKey
